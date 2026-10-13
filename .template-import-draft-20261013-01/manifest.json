@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-13",
+  "draft": ".template-import-draft-20261013-01",
+  "backup": ".template-import-backup-20261013-01",
+  "files": [
+    "AGENTS.md",
+    "MEMORY.md",
+    "README.md",
+    "ROADMAP.md",
+    "TASKS.md",
+    "docs/MEMORY-ENTRY-TEMPLATE.md",
+    "docs/RELEASE-QA-CHECKLIST.md",
+    "docs/verification/2026-10-13-template-import.md",
+    "docs/workflows/import-project.md",
+    "docs/workflows/memory-check.md",
+    "init.md",
+    "memory/261013-23-协作文档接入.md",
+    "memory/README.md"
+  ],
+  "modified": [
+    "README.md"
+  ],
+  "created": [
+    "AGENTS.md",
+    "MEMORY.md",
+    "ROADMAP.md",
+    "TASKS.md",
+    "docs/MEMORY-ENTRY-TEMPLATE.md",
+    "docs/RELEASE-QA-CHECKLIST.md",
+    "docs/verification/2026-10-13-template-import.md",
+    "docs/workflows/import-project.md",
+    "docs/workflows/memory-check.md",
+    "init.md",
+    "memory/261013-23-协作文档接入.md",
+    "memory/README.md"
+  ]
+}

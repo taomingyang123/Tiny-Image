@@ -1,0 +1,22 @@
+# 复制为仓库 .github/workflows/ci.yml 后生效。
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Typecheck lint unit and static generation
+        run: yarn check
+      # 等 Playwright 添加后，可加入独立 e2e job；不要在未安装浏览器时假称已运行。

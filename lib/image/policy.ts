@@ -1,0 +1,143 @@
+import type {
+  SupportedInput,
+  SupportedOutput,
+  OutputMode,
+} from "./types";
+
+/**
+ * 根据输入 MIME 与用户选择的 OutputMode 解析目标输出 MIME
+ */
+export function resolveOutputMime(
+  input: SupportedInput,
+  option: OutputMode,
+): SupportedOutput {
+  if (option === "keep") return input;
+  return option === "jpeg" ? "image/jpeg" : "image/webp";
+}
+
+/**
+ * 判断是否应走 PNG 二进制无损优化路径（直接通过 OxiPNG 处理，不经过 Canvas 重采样）
+ */
+export function shouldUseLosslessPngPath(
+  input: SupportedInput,
+  output: SupportedOutput,
+  maxLongEdge: number | null,
+): boolean {
+  return input === "image/png" && output === "image/png" && maxLongEdge === null;
+}
+
+/**
+ * 计算体积节省百分比：(originalBytes - resultBytes) / originalBytes * 100
+ * 支持负值以如实展示体积增加
+ */
+export function savingsPercent(
+  originalBytes: number,
+  resultBytes: number,
+): number {
+  if (originalBytes <= 0) return 0;
+  const percent = ((originalBytes - resultBytes) / originalBytes) * 100;
+  return Math.round(percent * 10) / 10;
+}
+
+/**
+ * 格式化字节大小为人类可读字符串 (B, KB, MB)
+ */
+export function formatBytes(bytes: number, decimals = 1): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const safeI = Math.min(i, sizes.length - 1);
+  return `${parseFloat((bytes / Math.pow(k, safeI)).toFixed(dm))} ${sizes[safeI]}`;
+}
+
+/**
+ * 依据最长边上限计算目标缩放尺寸，保证等比缩放、不放大、宽高度不小于 1
+ */
+export function calculateTargetDimensions(
+  width: number,
+  height: number,
+  maxLongEdge: number | null,
+): { width: number; height: number; scaled: boolean } {
+  if (width <= 0 || height <= 0) {
+    return { width: Math.max(1, width), height: Math.max(1, height), scaled: false };
+  }
+
+  const currentLongEdge = Math.max(width, height);
+  if (!maxLongEdge || maxLongEdge <= 0 || currentLongEdge <= maxLongEdge) {
+    return { width, height, scaled: false };
+  }
+
+  const scale = maxLongEdge / currentLongEdge;
+  const targetWidth = Math.max(1, Math.round(width * scale));
+  const targetHeight = Math.max(1, Math.round(height * scale));
+
+  return {
+    width: targetWidth,
+    height: targetHeight,
+    scaled: true,
+  };
+}
+
+/**
+ * 根据输出 MIME 返回对应文件扩展名
+ */
+export function resolveExtension(mime: SupportedOutput): "jpg" | "png" | "webp" {
+  switch (mime) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+  }
+}
+
+/**
+ * 清理文件名：防范路径穿越 (../, ..\\)、不可见控制字符，并替换扩展名
+ */
+export function sanitizeFilename(
+  originalName: string,
+  targetExt: "jpg" | "png" | "webp",
+): string {
+  // 1. 移除路径分割符与不安全文件名字符
+  let safeBase = originalName
+    .replace(/[/\\?%*:|"<>#]/g, "_")
+    .replace(/\.\.+/g, "_")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1f\x80-\x9f]/g, "")
+    .trim();
+
+  // 2. 剥离原有扩展名
+  const dotIndex = safeBase.lastIndexOf(".");
+  if (dotIndex > 0) {
+    safeBase = safeBase.substring(0, dotIndex);
+  }
+
+  if (!safeBase) {
+    safeBase = "image";
+  }
+
+  return `${safeBase}.${targetExt}`;
+}
+
+/**
+ * 对批量导出的文件名进行稳定去重（例如 photo.webp, photo-2.webp）
+ */
+export function deduplicateFilenames(names: string[]): string[] {
+  const seenCount = new Map<string, number>();
+  return names.map((name) => {
+    const dotIndex = name.lastIndexOf(".");
+    const base = dotIndex > 0 ? name.substring(0, dotIndex) : name;
+    const ext = dotIndex > 0 ? name.substring(dotIndex) : "";
+
+    const count = (seenCount.get(name) || 0) + 1;
+    seenCount.set(name, count);
+
+    if (count === 1) {
+      return name;
+    }
+    return `${base}-${count}${ext}`;
+  });
+}

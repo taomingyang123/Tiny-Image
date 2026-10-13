@@ -1,0 +1,53 @@
+{
+  "name": "tinystool-image-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build && node scripts/build-public-files.mjs",
+    "build:node": "NITRO_PRESET=node-server nuxt build && node scripts/build-public-files.mjs",
+    "generate": "nuxt generate && node scripts/build-public-files.mjs",
+    "preview": "nuxt preview",
+    "preview:cloudflare": "npx wrangler dev --local --port 8787 --config wrangler.jsonc",
+    "deploy": "yarn build && npx wrangler deploy --config wrangler.jsonc",
+    "typecheck": "nuxt typecheck",
+    "test:unit": "vitest run",
+    "check": "yarn typecheck && yarn generate",
+    "seo-check": "node scripts/seo-check.mjs",
+    "seo:live": "node scripts/seo-live-check.mjs",
+    "indexnow:manifest": "node scripts/build-url-manifest.mjs",
+    "indexnow:submit": "node scripts/submit-indexnow.mjs",
+    "indexnow:changes": "node scripts/submit-indexnow-changes.mjs",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "@nuxtjs/i18n": "^10.2.1",
+    "@nuxtjs/sitemap": "^7.4.9",
+    "@vueuse/core": "^14.1.0",
+    "@vueuse/nuxt": "^14.1.0",
+    "dotenv": "^16.4.7",
+    "fflate": "^0.8.3",
+    "nuxt": "^3.10.1",
+    "nuxt-gtag": "^3.0.2",
+    "vue": "^3.5.25",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.9.4",
+    "@types/node": "^20.10.6",
+    "sass": "^1.87.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vitest": "^5.0.4",
+    "vue-tsc": "^3.3.13"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "packageManager": "yarn@4.5.0"
+}

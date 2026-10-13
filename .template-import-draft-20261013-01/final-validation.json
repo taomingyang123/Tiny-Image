@@ -1,0 +1,12 @@
+{
+  "target": "root",
+  "passed": true,
+  "checks": [
+    "13 delivery documents exist",
+    "27 relative links resolve; project fields filled; fences paired",
+    "task five fields, unique IDs, WIP and counts match: {\"done\": 1, \"todo\": 1}",
+    "log fields, four sections, index and roadmap match tasks",
+    "64 original paths preserved, including deletions; README original text retained"
+  ],
+  "errors": []
+}

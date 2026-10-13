@@ -1,0 +1,34 @@
+ M README.md
+ D app.config.ts
+ M assets/css/main.css
+ D i18n/en/about.ts
+ D i18n/i18n.config.ts
+ D i18n/locales/en.ts
+ D i18n/locales/zh.ts
+ D i18n/zh/about.ts
+ D layouts/components/AppHeader.vue
+ M layouts/default.vue
+ M nuxt.config.ts
+ M package.json
+ D pages/about.vue
+ M pages/index.vue
+ D public/_robots.txt
+ D public/favicon.ico
+ M tsconfig.json
+ M yarn.lock
+?? .env.example
+?? .yarn/
+?? .yarnrc.yml
+?? app.vue
+?? components/
+?? composables/
+?? config/
+?? error.vue
+?? i18n/locales/en-US/
+?? i18n/locales/zh-CN/
+?? plugins/
+?? public/favicon.svg
+?? scripts/
+?? server/
+?? universal-project-template/
+?? wrangler.jsonc
