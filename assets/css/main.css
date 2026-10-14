@@ -90,12 +90,9 @@ button {
     white-space: nowrap;
 }
 
-.grid {
+.two-col {
     display: grid;
     gap: 16px;
-}
-
-.two-col {
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
 }
 

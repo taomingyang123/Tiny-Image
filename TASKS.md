@@ -199,6 +199,16 @@
 - **进展**：2026-10-14 已保留 815 个安装包附带声明；仍需上游来源及素材原创/授权证据。
 - **证据**：[本地依赖清单](docs/verification/dependency-licenses.json)、[第三方 notices](public/third-party-licenses.txt)。
 
+#### T04-13 · 统一页面内容与顶部导航宽度并重构压缩配置面板布局
+- **行为**：
+  1. 移除首页、隐私页及 FAQ 模块多余的内层窄宽度约束（`max-w-5xl` / `max-w-4xl` / `max-w-3xl` 与额外水平内边距），使页面主体内容宽度与顶部导航栏（`SiteHeader`）及页脚（`SiteFooter`）在 `.site-container` 内完全对齐；
+  2. 清理 `assets/css/main.css` 中覆盖 Tailwind `gap-*` 的全局 `.grid` 冲突样式；
+  3. 重构 `components/ImageSettings.vue` 三列配置布局，统一各列标题行与控件区高度（`h-11`）及水平基线对齐，将模式说明置于底部统一提示栏，消除中间列下沉错位与按钮间距异常。
+- **验证**：静态：源码、DOM 选择器（`data-testid="settings"`、`data-output`）与多语言词条引用核对无误；运行时与系统级：当前沙箱仅开放项目目录，无法读取 `/Users/taomingyang/.nvm` 下的 Node 可执行文件（`Operation not permitted`），待在本地终端执行 `yarn check` 与 `yarn test:e2e` 验证。
+- **状态**：doing
+- **进展**：2026-10-14 完成 `pages/index.vue`、`pages/privacy.vue`、`components/ImageFaq.vue`、`components/ImageSettings.vue` 与 `assets/css/main.css` 改造及静态核对；按三层完成定义保持 `doing` 等待本地 Node 运行时验证。
+- **证据**：Git diff 核对通过（`pages/index.vue`、`pages/privacy.vue`、`components/ImageFaq.vue`、`components/ImageSettings.vue`、`assets/css/main.css`）。
+
 ### 已归档任务（历史模板）
 
 #### F01 · 接入已有项目协作文档
@@ -208,9 +218,9 @@
 ## 完成进度
 
 - todo：2（T04-11、T04-12）
-- doing：0
+- doing：1（T04-13）
 - blocked：0
 - done：23（既有 22 项含 F01 归档 + T04-10 本地审查）
-- 总数：25
-- 已启动或受阻数 = doing + blocked + done：23
-- 收尾比例 = done / (doing + blocked + done)：100%（23 / 23；不含 todo，不代表生产验收通过）
+- 总数：26
+- 已启动或受阻数 = doing + blocked + done：24
+- 收尾比例 = done / (doing + blocked + done)：95.8%（23 / 24；不含 todo，不代表生产验收通过）

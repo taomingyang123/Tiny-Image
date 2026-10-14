@@ -68,7 +68,7 @@ const handleDownloadActiveCompare = () => {
 </script>
 
 <template>
-  <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-10">
+  <div class="w-full py-2 md:py-4 space-y-10">
     <!-- Hero 视觉区 -->
     <header class="text-center space-y-4">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 shadow-sm shadow-cyan-500/10">
@@ -162,5 +162,5 @@ const handleDownloadActiveCompare = () => {
 
     <!-- SEO 常见问答模块 -->
     <ImageFaq />
-  </main>
+  </div>
 </template>

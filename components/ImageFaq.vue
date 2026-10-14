@@ -44,7 +44,7 @@ const faqs = [
       </p>
     </div>
 
-    <div class="max-w-3xl mx-auto space-y-3">
+    <div class="w-full space-y-3">
       <div
         v-for="(item, idx) in faqs"
         :key="idx"

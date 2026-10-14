@@ -9,7 +9,7 @@ usePageSeo({
 </script>
 
 <template>
-  <main class="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-8">
+  <div class="w-full py-2 md:py-4 space-y-8">
     <header class="space-y-3 border-b border-white/10 pb-6">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30">
         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -66,5 +66,5 @@ usePageSeo({
         </p>
       </section>
     </article>
-  </main>
+  </div>
 </template>
