@@ -15,8 +15,8 @@ export const siteConfig = {
   url: url.origin,
   name: process.env.NUXT_PUBLIC_SITE_NAME || "Tiny Image",
   image: process.env.NUXT_PUBLIC_SITE_IMAGE || "",
-  gtagId: process.env.NUXT_PUBLIC_GTAG_ID || "",
-  adsenseClient: process.env.NUXT_PUBLIC_ADSENSE_CLIENT || "",
+  gtagId: "",
+  adsenseClient: "",
   googleVerification: process.env.GOOGLE_SITE_VERIFICATION || "",
   bingVerification: process.env.BING_SITE_VERIFICATION || "",
 };

@@ -1,0 +1,298 @@
+
+ RUN  v5.0.4 /Users/taomingyang/Desktop/project/Tiny-Image
+
+stdout | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > cancel during File read never dispatches the cancelled image
+[Tiny Image WorkerClient] Creating new Web Worker instance...
+[Tiny Image WorkerClient] Dispatching task task_1791971354929_s4f74ml (sample.png) to Worker
+
+stderr | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > cancel during File read never dispatches the cancelled image
+[Tiny Image task error]: sample.png WorkerTaskError: Worker terminated
+    at WorkerClient.terminate (/Users/taomingyang/Desktop/project/Tiny-Image/lib/image/workerClient.ts:99:14)
+    at Object.destroy (/Users/taomingyang/Desktop/project/Tiny-Image/composables/useCompressionQueue.client.ts:506:18)
+    at /Users/taomingyang/Desktop/project/Tiny-Image/tests/unit/audit-regressions.test.ts:30:26
+    at file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:1632:35
+    at wrapper (file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2015:37)
+    at file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3314:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3272:10)
+    at file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3599:52
+    at run (file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:1352:20) {
+  code: 'CANCELLED'
+}
+
+stdout | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > clear while validating does not repopulate the list or allocate URLs
+[Tiny Image WorkerClient] Creating new Web Worker instance...
+
+stderr | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > clear while validating does not repopulate the list or allocate URLs
+[Tiny Image task error]: sample.png ReferenceError: Worker is not defined
+    at WorkerClient.workerFactory (/Users/taomingyang/Desktop/project/Tiny-Image/lib/image/workerClient.ts:48:9)
+    at WorkerClient.getOrCreateWorker (/Users/taomingyang/Desktop/project/Tiny-Image/lib/image/workerClient.ts:61:26)
+    at WorkerClient.process (/Users/taomingyang/Desktop/project/Tiny-Image/lib/image/workerClient.ts:145:25)
+    at scheduleNext (/Users/taomingyang/Desktop/project/Tiny-Image/composables/useCompressionQueue.client.ts:179:43)
+
+stdout | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > recompression ignores stale rejection and worker messages
+[Tiny Image WorkerClient] Creating new Web Worker instance...
+[Tiny Image WorkerClient] Dispatching task task_1791971354966_8jtji6p (sample.png) to Worker
+
+stderr | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > recompression ignores stale rejection and worker messages
+[Tiny Image task error]: sample.png WorkerTaskError: Worker terminated
+    at WorkerClient.terminate (/Users/taomingyang/Desktop/project/Tiny-Image/lib/image/workerClient.ts:99:14)
+    at Object.recompressAll (/Users/taomingyang/Desktop/project/Tiny-Image/composables/useCompressionQueue.client.ts:462:20)
+    at /Users/taomingyang/Desktop/project/Tiny-Image/tests/unit/audit-regressions.test.ts:72:51
+    at file:///Users/taomingyang/Desktop/project/Tiny-Image/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:20 {
+  code: 'CANCELLED'
+}
+
+stdout | tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > recompression ignores stale rejection and worker messages
+[Tiny Image WorkerClient] Creating new Web Worker instance...
+[Tiny Image WorkerClient] Dispatching task task_1791971354966_8jtji6p (sample.png) to Worker
+
+ ❯ tests/unit/audit-regressions.test.ts (9 tests | 8 failed) 108ms
+   ❯ T04-10 confirmed regression cases (9)
+     × ZIP preserves entries that already have numbered suffixes 5ms
+     × cancel during File read never dispatches the cancelled image 21ms
+     × clear while validating does not repopulate the list or allocate URLs 17ms
+     × recompression ignores stale rejection and worker messages 34ms
+     × bounds repeated and concurrent uploads to 20 tasks 2ms
+     × does not mistake ANIM bytes inside a static WebP payload for a chunk 1ms
+     × quantization keeps faint colored shadows instead of turning them black 1ms
+     × aggregate savings remains negative when output grows 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > ZIP preserves entries that already have numbered suffixes
+AssertionError: expected 3 to be 4 // Object.is equality
+
+- Expected
++ Received
+
+- 4
++ 3
+
+ ❯ tests/unit/audit-regressions.test.ts:42:33
+     40|   it('ZIP preserves entries that already have numbered suffixes', asyn…
+     41|     const names = deduplicateFilenames(['photo.png', 'photo.png', 'pho…
+     42|     expect(new Set(names).size).toBe(4);
+       |                                 ^
+     43|     const packed = await packZip(['photo.png', 'photo.png', 'photo-2.p…
+     44|     expect(Object.values(unzipSync(packed)).map(x => x[0]).sort()).toE…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > cancel during File read never dispatches the cancelled image
+AssertionError: expected { type: 'PROCESS', …(5) } to be undefined
+
+- Expected:
+undefined
+
++ Received:
+{
+  "input": ArrayBuffer [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "inputName": "sample.png",
+  "mime": "image/png",
+  "options": {
+    "jpegBackground": "#ffffff",
+    "maxLongEdge": null,
+    "output": "keep",
+    "quality": 80,
+  },
+  "taskId": "task_1791971354929_s4f74ml",
+  "type": "PROCESS",
+}
+
+ ❯ tests/unit/audit-regressions.test.ts:54:28
+     52|     queue.cancelTask(queue.tasks.value[0].id);
+     53|     read.resolve(new ArrayBuffer(png.length)); await turn();
+     54|     expect(worker.request).toBeUndefined();
+       |                            ^
+     55|     expect(queue.tasks.value[0].status).toBe('cancelled');
+     56|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > clear while validating does not repopulate the list or allocate URLs
+AssertionError: expected [ { …(13) } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ tests/unit/audit-regressions.test.ts:64:31
+     62|     read.resolve(png.buffer.slice(png.byteOffset, png.byteOffset + png…
+     63|     await adding; await turn();
+     64|     expect(queue.tasks.value).toHaveLength(0);
+       |                               ^
+     65|     expect(URL.createObjectURL).not.toHaveBeenCalled();
+     66|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > recompression ignores stale rejection and worker messages
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/unit/audit-regressions.test.ts:75:29
+     73|     expect(workers).toHaveLength(2);
+     74|     workers[0].success();
+     75|     expect(client.isBusy()).toBe(true);
+       |                             ^
+     76|     expect(queue.tasks.value[0].status).toBe('processing');
+     77|     workers[1].success(); await turn();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > bounds repeated and concurrent uploads to 20 tasks
+AssertionError: expected [ { …(8) }, { …(8) }, { …(8) }, …(27) ] to have a length of 20 but got 30
+
+- Expected
++ Received
+
+- 20
++ 30
+
+ ❯ tests/unit/audit-regressions.test.ts:84:31
+     82|     queue = createCompressionQueue();
+     83|     await Promise.all([queue.addFiles(Array.from({ length: 15 }, () =>…
+     84|     expect(queue.tasks.value).toHaveLength(20);
+       |                               ^
+     85|   });
+     86|   it('does not mistake ANIM bytes inside a static WebP payload for a c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > does not mistake ANIM bytes inside a static WebP payload for a chunk
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/unit/audit-regressions.test.ts:88:50
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > quantization keeps faint colored shadows instead of turning them black
+AssertionError: expected [ +0, +0, +0, 10 ] to deeply equal [ 255, +0, +0, 10 ]
+
+- Expected
++ Received
+
+  [
+-   255,
++   0,
+    0,
+    0,
+    10,
+  ]
+
+ ❯ tests/unit/audit-regressions.test.ts:101:32
+     99|     for (const dither of [false, true]) {
+    100|       const result = quantizeImageData({ width: 1, height: 1, data: ne…
+    101|       expect([...result.data]).toEqual([255, 0, 0, 10]);
+       |                                ^
+    102|     }
+    103|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+ FAIL  tests/unit/audit-regressions.test.ts > T04-10 confirmed regression cases > aggregate savings remains negative when output grows
+AssertionError: expected +0 to be -100 // Object.is equality
+
+- Expected
++ Received
+
+- -100
++ 0
+
+ ❯ tests/unit/audit-regressions.test.ts:107:53
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 1 passed (9)
+   Start at  17:49:14
+   Duration  328ms (tests 47%, import 31%, transform 21%, worker 1%)
+

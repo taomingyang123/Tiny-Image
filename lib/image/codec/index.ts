@@ -10,12 +10,14 @@ import {
   calculateTargetDimensions,
   resolveExtension,
 } from "../policy";
-import { probeDimensions } from "../dimensions";
-import { encodeJpeg, decodeJpeg } from "./jpeg";
-import { encodeWebp, decodeWebp } from "./webp";
-import { optimisePng, decodePng } from "./png";
+import { probeDimensions, isPixelLimitExceeded } from "../dimensions";
+import { detectImageFormat } from "../magic";
+
+
+
 import { flattenAlphaToWhite } from "./alpha";
 import { resizeImageData } from "./resize";
+import { quantizeImageData } from "./quantize";
 
 export interface ProcessImageParams {
   id: string;
@@ -35,12 +37,22 @@ export async function processImage(
   const { id, originalName, inputBuffer, inputMime, options, onProgress } = params;
   const startTime = Date.now();
   const originalBytes = inputBuffer.byteLength;
+  const detected = detectImageFormat(inputBuffer);
+  const dims = probeDimensions(inputBuffer);
+  const reject = (code: string) => { throw Object.assign(new Error(code), { code }); };
+  if (!detected || detected.mime !== inputMime) reject("INVALID_FILE");
+  if (detected?.isAnimated) reject("ANIMATED_UNSUPPORTED");
+  if (!dims || dims.width <= 0 || dims.height <= 0) reject("INVALID_FILE");
+  if (dims && isPixelLimitExceeded(dims.width, dims.height)) reject("PIXEL_LIMIT");
+  if (!Number.isFinite(options.quality) || options.quality < 1 || options.quality > 100 ||
+      (options.maxLongEdge !== null && (!Number.isInteger(options.maxLongEdge) || options.maxLongEdge < 1 || options.maxLongEdge > 10000))) reject("INVALID_FILE");
   const targetMime: SupportedOutput = resolveOutputMime(inputMime, options.output);
   const extension = resolveExtension(targetMime);
 
-  // 1. 路径 A：PNG 原格式同尺寸无损优化通道（纯二进制 OxiPNG，绝不破坏像素语义）
-  if (shouldUseLosslessPngPath(inputMime, targetMime, options.maxLongEdge)) {
+  // 1. 路径 A：PNG 原格式同尺寸（或显式质量100）纯二进制无损优化通道（保护像素与所有透明光晕）
+  if (shouldUseLosslessPngPath(inputMime, targetMime, options.maxLongEdge, options.output, options.quality)) {
     onProgress?.("encode");
+    const { optimisePng } = await import("./png");
     const optimisedBuffer = await optimisePng(inputBuffer, 2);
 
     // 探测原始尺寸供结果展示
@@ -89,17 +101,18 @@ export async function processImage(
   let imageData: ImageData;
   switch (inputMime) {
     case "image/jpeg":
-      imageData = await decodeJpeg(inputBuffer);
+      imageData = await (await import("./jpeg")).decodeJpeg(inputBuffer);
       break;
     case "image/png":
-      imageData = await decodePng(inputBuffer);
+      imageData = await (await import("./png")).decodePng(inputBuffer);
       break;
     case "image/webp":
-      imageData = await decodeWebp(inputBuffer);
+      imageData = await (await import("./webp")).decodeWebp(inputBuffer);
       break;
   }
 
   // 阶段 2：尺寸检查与重采样
+  if (isPixelLimitExceeded(imageData.width, imageData.height)) reject("PIXEL_LIMIT");
   const origWidth = imageData.width;
   const origHeight = imageData.height;
   const { width: targetW, height: targetH, scaled } = calculateTargetDimensions(
@@ -125,17 +138,22 @@ export async function processImage(
 
   switch (targetMime) {
     case "image/jpeg":
-      outputBuffer = await encodeJpeg(imageData, options.quality);
+      outputBuffer = await (await import("./jpeg")).encodeJpeg(imageData, options.quality);
       mode = "lossy";
       break;
     case "image/webp":
-      outputBuffer = await encodeWebp(imageData, options.quality);
+      outputBuffer = await (await import("./webp")).encodeWebp(imageData, options.quality);
       mode = "lossy";
       break;
     case "image/png":
-      // PNG 格式重采样后的输出通道
-      outputBuffer = await optimisePng(imageData, 2);
-      mode = "lossless";
+      // PNG 格式输出：质量 < 100 时执行智能色彩量化（类似 TinyPNG），质量 100 时保留全彩
+      if (options.output === "png" && options.quality < 100) {
+        imageData = quantizeImageData(imageData, { quality: options.quality });
+        mode = "lossy";
+      } else {
+        mode = "lossless";
+      }
+      outputBuffer = await (await import("./png")).optimisePng(imageData, 2);
       break;
   }
 

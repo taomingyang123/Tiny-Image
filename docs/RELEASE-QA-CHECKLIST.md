@@ -1,35 +1,28 @@
-# 验收清单
+# Tiny Image 发布验收清单
 
-> 本次只验收 F01 文档接入。后续业务任务复用此结构并按实际场景更新；未执行为「未验证」，不适用注明 N/A 原因。
+更新：2026-10-14，T04-10。仅对本次有证据的检查打勾，历史完成标签不作为验收依据。
 
-## 环境
+| 检查 | 状态与证据 |
+|---|---|
+| TypeScript strict | 本地通过 `yarn typecheck` |
+| 单元/集成/WASM | 88 项通过；模拟 Worker 的测试不等同浏览器 E2E |
+| SSG / SEO | 本地通过：6 个业务页面及 canonical/hreflang/JSON-LD/sitemap/robots/redirects |
+| 真实 Chrome Worker/WASM/下载 | 本地生产产物通过，见 [记录](verification/2026-10-14-browser-check.json) |
+| 首屏 WASM / 外部请求 / CSP | 本地 Chrome 无 WASM 首屏请求、无页面/Worker 外部或上传请求、无 CSP 错误 |
+| 20 张/30 MiB/32 MP 桌面/16 MP 移动/100 MiB ZIP | 单元边界与 20 张真实浏览器流程通过；移动内存仍待真机 |
+| 第三方声明文件 | 已生成，来源核实仍待 T04-12 |
+| CI 配置 | 已加入真实 Chrome 步骤；未运行远端 GitHub Actions，不宣称远端 CI 通过 |
 
-- 任务与版本：F01；盘点时 HEAD `a4c6489`，工作区已有未提交改动。
-- 接入日期：2026-10-13，Asia/Shanghai。
-- 文档检查：Python 3 标准库，当前项目根目录。
-- 本地运行工具观察：Node v22.17.0，Yarn 4.5.0；观察版本不代表运行基线通过。
-- 输入：已确认的已有项目模式、模板验收交付目标、本次仅协作文档范围。
-- 与生产差异：本次没有运行或连接生产站点；域名、账号与交付环境待确认。
+- [x] 本地 `yarn check` 通过。
+- [x] 本地 `yarn test:e2e` 通过真实 Chrome 代表流程。
+- [x] 三语静态页面及隐私页存在。
+- [x] dev Spike 不发布；页脚可访问第三方 notices。
+- [ ] 独立 GitHub 仓库远端、main 保护及远端 CI 成功证据。
+- [ ] Cloudflare Pages Git 集成、预览/生产部署、真实六条页面路径、域名 DNS/HTTPS。
+- [ ] 生产 WASM MIME/URL/CSP、取消/重试、下载、网络数据流及回滚部署 ID。
+- [ ] Safari/macOS、iOS Safari、Android Chrome 真机、Firefox/Edge。
+- [ ] EXIF 方位、ICC/16-bit PNG、低内存场景、12 个真实样本与 Lighthouse 报告。
+- [ ] SVG 图标/favicon 与上游 WASM 内部许可来源核实。
+- [ ] Search Console / Bing 提交证据（不保证收录）。
 
-## 本次三层门
-
-| 层级 | 操作 | 预期 | 实际结果 | 证据 |
-|---|---|---|---|---|
-| 静态 | 占位/链接、任务字段/编号/WIP/计数、日志与看板、原文件摘要 | 文档可交接，原有内容保留 | 通过 | [验收报告](verification/2026-10-13-template-import.md) |
-| 运行时 | 业务组件与服务 | N/A：纯文档接入 | N/A | F01 范围 |
-| 系统级 | 业务端到端场景 | N/A：纯文档接入 | N/A | F01 范围 |
-
-## 后续 F02 按需覆盖
-
-- 默认 Cloudflare、Node、静态构建与各自对应预览；不混用产物。
-- 英文首页、中文首页、语言切换、规范链接与完整元信息。
-- Sitemap、robots、404/noindex、尾斜杠永久重定向及查询参数。
-- 响应式布局、键盘操作与公共导航。
-- IndexNow manifest 和 dry-run；不自动部署或真实通知搜索引擎。
-- 数据读写与权限：N/A，当前无持久化业务数据或权限系统。
-- 单独类型/格式/单元测试工具尚未配置，后续按需求明确，不能宣称 build 已覆盖。
-- 性能阈值、最终交付形式与正式目标站点要求待确认，不虚构门槛。
-
-## 结论
-
-F01 文档接入验收通过，见报告；F02 业务运行基线未验证。
+未完成项跟踪于 TASKS.md 的 T04-11/T04-12。详细范围与结果见 [审查报告](verification/2026-10-14-feature-audit.md)。

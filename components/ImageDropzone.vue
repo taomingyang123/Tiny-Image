@@ -90,7 +90,10 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="relative rounded-3xl p-8 md:p-12 text-center transition-all duration-300 cursor-pointer overflow-hidden group select-none border-2 border-dashed"
+    tabindex="0"
+    role="button"
+    :aria-label="t('uploader.dragOrClick')"
+    class="relative rounded-3xl p-8 md:p-12 text-center transition-all duration-300 cursor-pointer overflow-hidden group select-none border-2 border-dashed focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:border-cyan-400"
     :class="[
       isDragOver
         ? 'border-cyan-400 bg-cyan-950/20 scale-[1.01] shadow-2xl shadow-cyan-500/10'
@@ -101,6 +104,8 @@ onUnmounted(() => {
     @dragleave="handleDragLeave"
     @drop="handleDrop"
     @click="triggerFileInput"
+    @keydown.enter.prevent="triggerFileInput"
+    @keydown.space.prevent="triggerFileInput"
   >
     <!-- 背景流光装饰 -->
     <div

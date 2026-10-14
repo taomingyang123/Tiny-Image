@@ -1,5 +1,5 @@
 import { zip, type Zippable } from "fflate";
-import { sanitizeFilename, deduplicateFilenames } from "./policy";
+import { sanitizeFilename, deduplicateFilenames, resolveExtension } from "./policy";
 import type { QueueItem } from "../../composables/useCompressionQueue.client";
 
 export const DEFAULT_MAX_ZIP_BYTES = 100 * 1024 * 1024; // 100 MiB 客户端安全保护上限
@@ -36,6 +36,11 @@ export function downloadTask(task: QueueItem): void {
   const ext = task.result?.extension || "png";
   const filename = sanitizeFilename(task.originalName, ext);
   downloadBlob(blob, filename);
+}
+
+export function downloadOriginalTask(task: QueueItem): void {
+  if (!task.detectedMime) throw new Error("Input format is unavailable");
+  downloadBlob(task.file, sanitizeFilename(task.originalName, resolveExtension(task.detectedMime)));
 }
 
 export interface ZipEntry {
@@ -76,11 +81,28 @@ export function packZip(entries: ZipEntry[]): Promise<Uint8Array> {
 }
 
 /**
+ * 生成带时间戳与随机字符串的 ZIP 打包文件名
+ * 格式示例：tiny-images-20261014144024-a1b2.zip
+ */
+export function generateZipFilename(prefix = "tiny-images", date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = date.getFullYear();
+  const m = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const h = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  const s = pad(date.getSeconds());
+  const timestamp = `${y}${m}${d}${h}${min}${s}`;
+  const randomStr = Math.random().toString(36).substring(2, 6);
+  return `${prefix}-${timestamp}-${randomStr}.zip`;
+}
+
+/**
  * 批量将多个已完成的图片任务打包并触发 ZIP 下载
  */
 export async function downloadTasksAsZip(
   tasks: QueueItem[],
-  zipFilename = "tiny-images.zip",
+  zipFilename = generateZipFilename(),
   maxTotalBytes = DEFAULT_MAX_ZIP_BYTES,
 ): Promise<void> {
   const completedTasks = tasks.filter(
@@ -100,9 +122,7 @@ export async function downloadTasksAsZip(
   }
 
   if (totalBytes > maxTotalBytes) {
-    throw new Error(
-      `Total files size (${Math.round(totalBytes / 1024 / 1024)} MiB) exceeds ZIP safety limit`,
-    );
+    throw Object.assign(new Error("Total files size exceeds ZIP safety limit"), { code: "ZIP_TOO_LARGE" });
   }
 
   // 2. 提取每个任务的 Uint8Array

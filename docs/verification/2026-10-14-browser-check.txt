@@ -1,0 +1,21 @@
+PASS No WASM loaded on idle first page
+PASS Real Worker compresses PNG/JPEG/WebP; bad input is isolated
+PASS WASM requests use valid URLs, HTTP 200 and MIME
+PASS Downloaded ZIP has three successful images
+PASS All downloaded JPEG/PNG/WebP results decode at original dimensions
+PASS English route preserves queue and translates errors
+PASS Japanese route preserves queue
+PASS Comparison dialog traps keyboard focus and exposes an accessible slider
+PASS PNG -> JPEG alpha composites onto white
+PASS Original image can be downloaded
+PASS WebP -> explicit quantized PNG works
+PASS PNG output preserves partial transparency
+PASS 390px mobile page has no horizontal overflow
+PASS Batch upload enforces 20 images with a visible message
+PASS Clear removes all result and preview entries
+PASS Cancel interrupts a real in-progress Worker task
+PASS Cancelled task retries with a fresh Worker
+PASS Six public pages and license notices exist; dev Spike is excluded
+PASS Page and Workers make no external or upload requests
+PASS No runtime exceptions or CSP errors
+Browser evidence: /var/folders/5k/vntkx6b16cx4270pwy8qhwjr0000gn/T/tiny-image-browser-m0HsDU

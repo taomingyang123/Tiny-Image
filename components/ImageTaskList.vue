@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import type { QueueItem, QueueStats } from "../composables/useCompressionQueue.client";
 import { formatBytes } from "../lib/image/policy";
-import { downloadTask, downloadTasksAsZip } from "../lib/image/download";
+import { downloadTask, downloadOriginalTask, downloadTasksAsZip, generateZipFilename } from "../lib/image/download";
 
 interface Props {
   tasks: QueueItem[];
@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: "retry", taskId: string): void;
   (e: "remove", taskId: string): void;
   (e: "clear-all"): void;
+  (e: "recompress-all"): void;
   (e: "compare", task: QueueItem): void;
 }>();
 
@@ -30,9 +31,10 @@ const handleDownloadAllZip = async () => {
   zipError.value = null;
 
   try {
-    await downloadTasksAsZip(props.tasks, "tiny-images.zip");
+    const filename = generateZipFilename();
+    await downloadTasksAsZip(props.tasks, filename);
   } catch (err: any) {
-    zipError.value = err?.message || String(err);
+    zipError.value = t(err?.code === "ZIP_TOO_LARGE" ? "errors.ZIP_TOO_LARGE" : "errors.UNKNOWN");
   } finally {
     isZipping.value = false;
   }
@@ -51,10 +53,21 @@ const getSavingsPercent = (task: QueueItem): string => {
   const percent = ((task.originalBytes - task.result.resultBytes) / task.originalBytes) * 100;
   return percent.toFixed(1);
 };
+
+const getTaskErrorMessage = (task: QueueItem): string => {
+  if (task.errorCode && task.errorCode !== "UNKNOWN") {
+    const errorKey = `errors.${task.errorCode}`;
+    const localized = t(errorKey);
+    if (localized && localized !== errorKey) {
+      return localized;
+    }
+  }
+  return t("errors.UNKNOWN");
+};
 </script>
 
 <template>
-  <div v-if="tasks.length > 0" class="space-y-4">
+  <div v-if="tasks.length > 0" data-testid="task-list" class="space-y-4">
     <!-- 顶部总控与统计栏 -->
     <div
       class="glass rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 border border-white/10"
@@ -72,15 +85,15 @@ const getSavingsPercent = (task: QueueItem): string => {
 
         <!-- 累计节省 -->
         <div v-if="stats.completed > 0" class="flex items-center gap-1.5 text-xs text-gray-300 border-l border-white/10 pl-3">
-          <span>{{ t("queue.totalSaved") }}:</span>
+          <span>{{ t(stats.totalSavedBytes < 0 ? "queue.totalIncreased" : "queue.totalSaved") }}:</span>
           <span class="font-mono font-bold text-emerald-400">
-            {{ formatBytes(stats.totalSavedBytes) }}
+            {{ formatBytes(Math.abs(stats.totalSavedBytes)) }}
           </span>
           <span
-            v-if="stats.overallSavingsPercent > 0"
+            v-if="stats.overallSavingsPercent !== 0"
             class="px-1.5 py-0.2 rounded font-mono text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
           >
-            -{{ stats.overallSavingsPercent.toFixed(1) }}%
+            {{ stats.overallSavingsPercent < 0 ? "+" : "-" }}{{ Math.abs(stats.overallSavingsPercent).toFixed(1) }}%
           </span>
         </div>
       </div>
@@ -89,7 +102,20 @@ const getSavingsPercent = (task: QueueItem): string => {
       <div class="flex items-center gap-2.5">
         <button
           type="button"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center gap-1.5"
+          :disabled="isProcessing"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold text-cyan-300 hover:text-white bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          :title="t('queue.recompressAllTip')"
+          @click="emit('recompress-all')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ t("queue.recompressAll") }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
           @click="emit('clear-all')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -139,13 +165,15 @@ const getSavingsPercent = (task: QueueItem): string => {
       class="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between"
     >
       <span>{{ zipError }}</span>
-      <button type="button" class="underline text-[11px]" @click="zipError = null">关闭</button>
+      <button type="button" class="underline text-[11px]" @click="zipError = null">{{ t("common.close") }}</button>
     </div>
 
     <!-- 任务卡片列表 -->
     <div class="space-y-2.5">
       <div
         v-for="task in tasks"
+        data-testid="task"
+        :data-status="task.status"
         :key="task.id"
         class="glass rounded-xl p-3.5 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4 transition-all duration-200 border border-white/5 hover:border-white/10"
       >
@@ -199,7 +227,7 @@ const getSavingsPercent = (task: QueueItem): string => {
                       : 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
                   "
                 >
-                  {{ task.result.resultBytes < task.originalBytes ? `-${getSavingsPercent(task)}%` : '+0%' }}
+                  {{ task.result.resultBytes < task.originalBytes ? `-${getSavingsPercent(task)}%` : `+${Math.abs(Number(getSavingsPercent(task))).toFixed(1)}%` }}
                 </span>
               </template>
 
@@ -208,8 +236,8 @@ const getSavingsPercent = (task: QueueItem): string => {
               </template>
 
               <template v-else-if="task.status === 'failed'">
-                <span class="text-rose-400 truncate max-w-[220px]" :title="task.errorMessage">
-                  {{ task.errorMessage || t("queue.failed") }}
+                <span class="text-rose-400 truncate max-w-[220px]" :title="getTaskErrorMessage(task)">
+                  {{ getTaskErrorMessage(task) }}
                 </span>
               </template>
             </div>
@@ -220,11 +248,11 @@ const getSavingsPercent = (task: QueueItem): string => {
         <div class="flex items-center gap-2 self-start sm:self-center">
           <!-- 排队中 -->
           <span
-            v-if="task.status === 'queued'"
+            v-if="task.status === 'queued' || task.status === 'validating'"
             class="px-2.5 py-1 rounded-full text-xs font-mono bg-gray-800/80 text-gray-400 border border-white/5 flex items-center gap-1.5"
           >
             <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-            {{ t("queue.queued") }}
+            {{ t(task.status === "validating" ? "queue.validating" : "queue.queued") }}
           </span>
 
           <!-- 处理中 -->
@@ -283,6 +311,7 @@ const getSavingsPercent = (task: QueueItem): string => {
 
         <!-- 右侧：操作按钮组 -->
         <div class="flex items-center gap-1.5 self-end sm:self-center">
+          <button v-if="task.status === 'success' || task.status === 'skipped'" type="button" class="px-2 py-1.5 text-xs text-gray-300" @click="downloadOriginalTask(task)">{{ t("queue.downloadOriginal") }}</button>
           <!-- 对比按钮 -->
           <button
             v-if="task.status === 'success' || task.status === 'skipped'"
@@ -314,7 +343,7 @@ const getSavingsPercent = (task: QueueItem): string => {
 
           <!-- 取消按钮 (处理中或排队中) -->
           <button
-            v-if="task.status === 'queued' || task.status === 'processing'"
+            v-if="task.status === 'validating' || task.status === 'queued' || task.status === 'processing'"
             type="button"
             class="px-2 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-200 bg-white/5 hover:bg-white/10 transition-all"
             @click="emit('cancel', task.id)"

@@ -5,6 +5,7 @@ import {
   downloadBlob,
   downloadTask,
   downloadTasksAsZip,
+  generateZipFilename,
 } from "../../lib/image/download";
 import type { QueueItem } from "../../composables/useCompressionQueue.client";
 
@@ -119,4 +120,19 @@ describe("downloadTasksAsZip 批量下载与超限拦截", () => {
       "exceeds ZIP safety limit",
     );
   });
+
+  it("generateZipFilename 应生成包含时间戳与随机字符串的文件名", () => {
+    const fixedDate = new Date(2026, 9, 14, 14, 30, 0); // 2026-10-14 14:30:00
+    const filename = generateZipFilename("tiny-images", fixedDate);
+
+    expect(filename).toMatch(/^tiny-images-20261014143000-[a-z0-9]{4}\.zip$/);
+
+    // 验证不同调用具有随机性
+    const f1 = generateZipFilename("tiny-images", fixedDate);
+    const f2 = generateZipFilename("tiny-images", fixedDate);
+    // 两个不同随机数的概率极高
+    expect(f1.startsWith("tiny-images-20261014143000-")).toBe(true);
+    expect(f2.startsWith("tiny-images-20261014143000-")).toBe(true);
+  });
 });
+

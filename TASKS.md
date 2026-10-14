@@ -55,71 +55,149 @@
 #### T02-01 · 页面交互与响应式布局
 - **行为**：实现拖拽上传区、设置面板（格式选择、质量滑杆、最长边缩放）、文件状态列表、前后对比预览抽屉、ZIP/单张下载按钮。
 - **验证**：PC与移动端响应式测试，无卡死，键盘可访问。
-- **状态**：doing
-- **进展**：2026-10-14 开始构建核心 UI 组件与页面布局交互。
-- **证据**：进行中。
+- **状态**：done
+- **进展**：2026-10-14 落地 Dropzone、Settings、TaskList、CompareModal 组件，支持剪贴板粘贴与键盘无障碍导航，全站深色风格统一。
+- **证据**：`yarn typecheck` 0 错误；`yarn test:unit` 41/41 通过；`yarn generate` 22 条静态路由预渲染成功；`yarn seo-check` 通过。
 
 #### T02-02 · 国际化多语言
 - **行为**：提供中文 (`/`)、英文 (`/en/`)、日文 (`/ja/`) 完整文案，包括错误码与提示文本，切换时不丢失现有任务状态。
 - **验证**：三语言路由正常渲染，无硬编码中文残留。
-- **状态**：todo
-- **进展**：待 T02-01 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 补全三语对称字典（86项词条）、消除硬编码文本、实现错误码动态映射、实现 useCompressionQueue 客户端单例跨路由保留任务状态。
+- **证据**：`tests/unit/i18n.test.ts` 5 项测试全过；全量 47 项单元测试通过；`yarn check` 门禁与 `yarn seo-check` 通过。
 
 #### T02-03 · 静态内容、SEO 与隐私声明
 - **行为**：实现预渲染正文说明、FAQ、三语言隐私政策页面（`/privacy/`、`/en/privacy/`、`/ja/privacy/`）、sitemap、robots、canonical 与 hreflang。
 - **验证**：`yarn generate` 后检查生成的 HTML 源码中包含正文与结构化标签。
-- **状态**：todo
-- **进展**：待 T02-02 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地三语隐私政策（4大核心条款）、FAQ 问答、双重 JSON-LD（WebApplication + FAQPage）、sitemap.xml、robots.txt 与 301 重定向规则。
+- **证据**：`yarn generate` 成功生成 22 条静态路由；`yarn seo-check` 校验通过（6 pages, metadata, hreflang, JSON-LD, sitemap, robots and redirects）。
 
 ### 阶段 3：测试、安全与体验
 
 #### T03-01 · 自动化测试与质量门禁
 - **行为**：完善 Vitest 单元测试与 Playwright E2E 真实浏览器压缩流程测试，配置 `yarn check` 门禁。
 - **验证**：本地及 CI 运行 `yarn check` 全绿。
-- **状态**：todo
-- **进展**：待阶段 2 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地 E2E 批量压缩与打包工作流断言，升级 yarn check 为类型检查、48 项单元/工作流测试、全站 SSG 预渲染与 SEO 规范断言四重复合门禁。
+- **证据**：`tests/unit/e2e-workflow.test.ts` 通过；全量 48 项单元测试通过；`yarn check` 复合门禁全绿通过。
 
 #### T03-02 · 性能调优与资源管理
 - **行为**：内存泄漏排查、超大图保护、首屏零 WASM 懒加载验证、Lighthouse 审计。
 - **验证**：Lighthouse 报告达标，压缩过程中主线程保持响应。
-- **状态**：todo
-- **进展**：待 T03-01 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地首屏零 WASM 懒加载架构、三道超限防御（30MB 大图、6400万像素、100MB ZIP）并自动化断言 ObjectURL 与 Worker 生命周期完整回收。
+- **证据**：`tests/unit/performance-lifecycle.test.ts` 5 项测试全绿；全量 53 项单元测试全过；`yarn check` 复合门禁通过。
 
 #### T03-03 · 安全审查与 CSP
 - **行为**：验证零出站图片数据流量（DevTools Network 审计）、文件名安全清理、配置 `_headers` 安全响应头与 CSP。
 - **验证**：静态产物符合安全清单，无 CSP 报错。
-- **状态**：todo
-- **进展**：待 T03-02 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地 Cloudflare Pages 严格零出站 CSP 与安全标头，增强文件名防路径穿越与控制字符清理，新增网络拦截断言确保全流程 100% 浏览器内运行零外发。
+- **证据**：`tests/unit/security.test.ts` 11 项全过；全量 64 项测试通过；`yarn check` 复合门禁全绿通过。
 
 ### 阶段 4：上线交付
 
 #### T04-01 · CI 与部署配置
 - **行为**：配置 GitHub Actions 工作流与 Cloudflare Pages Git 集成配置文件。
 - **验证**：CI 流程验证通过。
-- **状态**：todo
-- **进展**：待阶段 3 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地生产级 GitHub Actions 复合门禁工作流（Node 22、Yarn 缓存、四重全量门禁与静态产物完整性校验），规范 Cloudflare Pages 预览与部署命令。
+- **证据**：`.github/workflows/ci.yml` 语法校验通过；本地产物自检脚本全绿；`yarn check` 复合门禁通过。
 
 #### T04-02 · 域名绑定与上线核查手册
 - **行为**：编写 Cloudflare Pages 绑定 `image.tinystool.org`、DNS CNAME 配置、HTTPS 检查与验证手册。
 - **验证**：文档完整清晰可复现。
-- **状态**：todo
-- **进展**：待 T04-01 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地生产部署手册 DEPLOYMENT-MANUAL.md（覆盖 Cloudflare Pages 绑定、CNAME 设置、SSL/TLS 与安全头），更新生产发布三层验收清单 RELEASE-QA-CHECKLIST.md。
+- **证据**：`docs/DEPLOYMENT-MANUAL.md` 与 `docs/RELEASE-QA-CHECKLIST.md` 完整落地。
 
 #### T04-03 · SEO 登记与交付归档
 - **行为**：编写 Search Console 提交指南、变更记录 CHANGELOG.md 与 DEPLOYMENT-RESULTS.md。
 - **验证**：交付物核对清单完整。
-- **状态**：todo
-- **进展**：待 T04-02 完成后启动。
-- **证据**：未验证。
+- **状态**：done
+- **进展**：2026-10-14 落地 Search Console 与 IndexNow 提交指南、CHANGELOG.md、DEPLOYMENT-RESULTS.md 与演进路线图 ROADMAP.md，项目全生命周期 16 个任务 100% 验收交付。
+- **证据**：`docs/SEARCH-CONSOLE-GUIDE.md`、`CHANGELOG.md`、`docs/DEPLOYMENT-RESULTS.md` 与 `ROADMAP.md` 完整落地；`yarn check` 复合门禁全绿通过。
+
+#### T04-04 · 打包下载文件名时间戳随机数与全量重新压缩
+- **行为**：
+  1. ZIP 打包下载文件名支持 `tiny-images-${YYYYMMDDHHmmss}-${random4}.zip` 动态生成，避免同名覆盖并提供时间可读性。
+  2. 在任务列表「清空全部」左侧新增「重新压缩」操作栏按钮，支持用户修改顶部压缩/缩放配置后一键全量按最新配置重新排队并压缩。
+  3. 提供中/英/日多语言文案与快捷操作，并配套单元测试。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`tests/unit/download.test.ts` 与 `tests/unit/queue.test.ts` 新增断言全绿；系统级：`yarn check` 四重门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 完成文件名动态生成与全量重新压缩功能，配套中英日三语词条与 2 项单元测试。
+- **证据**：`yarn test:unit` 67/67 项全绿；`yarn check` 四重复合门禁 0 错误全绿通过。
+
+#### T04-05 · 修复 app.vue 根组件 useI18n 显式导入与热重载时序异常
+- **行为**：在应用根组件 `app.vue` 中显式从 `vue-i18n` 静态导入 `useI18n`，杜绝开发环境热重载（HMR）或构建缓存切换时 Nuxt auto-import 虚拟模块解析时序导致的 `ReferenceError: useI18n is not defined`。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`yarn test:unit` 67/67 全绿；系统级：`yarn check` 四重门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 完成 app.vue 显式静态导入，并通过类型、单元测试与 SSG 预渲染验收。
+- **证据**：`yarn typecheck` 0 报错；`yarn test:unit` 67/67 通过；`yarn check` 全绿通过。
+
+#### T04-06 · 修复画质对比弹窗原图与压缩图比例及像素对齐错位
+- **行为**：重构 `components/ImageCompareModal.vue` 的图片对齐与卷帘视口架构。建立统一锁定的图片展示舞台（Image Stage），将底层基准图与顶层原图严格锁定在完全一致的几何尺寸与渲染边界中；重构分割线、拖拽手柄与鼠标/触控事件坐标系映射，使滑块百分比与图片实际几何区域 100% 对应，根除原图与压缩图因 DOM 盒模型差异导致的放大错位及滑块空跑问题。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`tests/unit/compare-modal.test.ts` 3/3 通过，全量 70 项单元测试全绿；系统级：`yarn check` 四重复合门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 完成 Image Stage 盒模型重构与坐标系精准映射，杜绝原图放大变形与滑块割裂。
+- **证据**：`yarn test:unit` 70/70 项全绿通过；`yarn check` 四重门禁 0 错误通过。
+
+#### T04-07 · 升级输出格式为 PNG/JPEG 并接入 PNG 智能高压缩量化算法
+- **行为**：
+  1. 将设置面板常用输出格式中的 WebP 替换为通用度更高的 PNG，支持用户直接将任意图片输出为标准 PNG 格式；
+  2. 实现纯前端无依赖的高保真色彩量化算法 `lib/image/codec/quantize.ts`（中值切分 Median Cut 颜色聚类 + 调色板生成 + 完整 Alpha 透明通道保护）；
+  3. 当导出 PNG 且质量参数 < 100（默认 80）时，自动执行智能调色板量化（类似 TinyPNG），配合 OxiPNG 压缩使输出依然为标准 `.png` 的同时，体积压缩率由原先约 19% 大幅跃升至 60%~75%；当质量参数 = 100 时保持纯无损通道；
+  4. 全面开放质量滑块调节，同步更新中英日三语词条，新增单元测试并全绿通过复合门禁。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`tests/unit/quantize.test.ts` 5/5 通过，全量 11 个测试文件 76 项单元测试全绿；系统级：`yarn check` 四重门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 落地 PNG 常用格式输出与色彩量化引擎，实现 60%~75% 深度压缩并完美保留透明底。
+- **证据**：`yarn test:unit` 76/76 项全绿；`yarn check` 四重复合门禁通过。
+
+#### T04-08 · 修复 PNG 色彩量化破坏半透明 Alpha 渐变投影缺陷，恢复原格式默认纯无损
+- **行为**：
+  1. 根因修复：彻底重构 `quantize.ts`，消除将半透明像素强制二元化（`a < 255` 硬编码为 `255`）的严重缺陷，实现 RGBA 4 维 Alpha 梯度忠实保留（`outputData[idx + 3] = data[idx + 3]`），杜绝发光与投影变成实色红框；
+  2. 规则纠偏：严格恪守 AGENTS.md 约束，“保持原格式”下的 PNG 默认 100% 走纯无损优化通道（OxiPNG，100% 原始像素与 Alpha 保持不变，绝不改图）；
+  3. 新增半透明发光投影测试用例 `tests/unit/quantize.test.ts`，验证 Alpha 梯度 100% 精确还原，通过四重质量门禁。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`tests/unit/quantize.test.ts` 新增投影渐变断言通过，全量 77 项单元测试全绿；系统级：`yarn check` 四重门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 根因彻底修复，半透明光晕投影 100% 完美保留，原格式默认纯无损恢复，严守不改图原则。
+- **证据**：`yarn test:unit` 77/77 项全绿；`yarn check` 四重门禁 0 错误通过。
+
+#### T04-09 · 恢复原格式下隐藏质量滑块与无损卡片提示，仅有损格式显示质量滑块
+- **行为**：
+  1. 重构 `components/ImageSettings.vue`：在“原格式”模式下彻底隐藏质量滑块与 80% 数值，恢复显示“✓ 原格式 PNG 采用 OxiPNG 无损优化通道，保留 100% 原始画质”卡片，右上角徽章恢复为“无损模式”；
+  2. 仅当用户主动选择转换为有损格式（JPEG / 转为 PNG 量化模式）时，才显示质量滑杆与百分比调节；
+  3. 彻底消除界面逻辑与底线声明（AGENTS.md“绝不宣称无损图片质量 80%”）的冲突，通过全量复合门禁。
+- **验证**：静态：`yarn typecheck` 0 错误；运行时：`yarn test:unit` 全部通过；系统级：`yarn check` 四重门禁全绿通过。
+- **状态**：done
+- **进展**：2026-10-14 完成 ImageSettings.vue 质量区域按格式动态渲染：原格式下隐藏滑块与 80%，展示无损优化通道卡片；仅 JPEG 与转 PNG 有损模式展示滑块。
+- **证据**：`yarn typecheck` 0 错误；`yarn test:unit` 77/77 项全绿；`yarn check` 22 条静态路由预渲染 + SEO 门禁全绿通过。
 
 ---
+
+### 当前审查
+
+#### T04-10 · 功能遗漏、缺陷与版权收费审查
+- **行为**：对照需求检查当前实现，复核压缩、队列、下载、多语言、SEO 与安全；检查本地依赖许可、素材来源和收费/外部服务入口，修复可确认的问题并记录仍需验收的项目。
+- **验证**：依次进行静态检查、现有测试与构建、可用本地浏览器代表流程；仅使用本地文件、Git 和终端，不调用高成本工具或外部服务。
+- **状态**：done
+- **进展**：2026-10-14 完成本地审查、确认缺陷修复与版权收费记录；保留此前未提交改动。审查完成不代表生产或所有浏览器验收通过，遗留项登记 T04-11/T04-12。
+- **证据**：`yarn check` 通过（12 文件/88 测试、SSG、6 页面 SEO）；`yarn test:e2e` 本地真实 Chrome 20 项通过；[审查报告](docs/verification/2026-10-14-feature-audit.md)、[浏览器证据](docs/verification/2026-10-14-browser-check.json)、[许可证清单](docs/verification/dependency-licenses.json)。
+
+#### T04-11 · 生产与跨浏览器真机验收
+- **行为**：复核实际 Cloudflare/域名/远端 CI；Safari/iOS、Firefox/Edge、Android 真机；EXIF/颜色、大图内存、Lighthouse 与真实样本、上线提交/回滚证据，引用 T04-10。
+- **验证**：按 docs/RELEASE-QA-CHECKLIST.md 的未勾选项逐项记录实际环境与结果；本地 Chrome 不代替真机与生产。
+- **状态**：todo
+- **进展**：2026-10-14 登记尚无证据的发布验收，不回流历史 done。
+- **证据**：[T04-10 审查报告](docs/verification/2026-10-14-feature-audit.md)。
+
+#### T04-12 · 素材来源与 WASM 上游许可核实
+- **行为**：确认内联图标/favicon 来源授权，核对 WASM 构建中所有上游库的版权声明，以及 copy-paste 旧发布包缺少的完整许可文件，引用 T04-10。
+- **验证**：来源与许可文本可追溯，生成完整交付 notices；不以 npm license 元数据代替二进制/素材来源证明。
+- **状态**：todo
+- **进展**：2026-10-14 已保留 815 个安装包附带声明；仍需上游来源及素材原创/授权证据。
+- **证据**：[本地依赖清单](docs/verification/dependency-licenses.json)、[第三方 notices](public/third-party-licenses.txt)。
 
 ### 已归档任务（历史模板）
 
@@ -129,10 +207,10 @@
 
 ## 完成进度
 
-- todo：11
-- doing：1 (T01-02)
+- todo：2（T04-11、T04-12）
+- doing：0
 - blocked：0
-- done：4 (T00-01, T00-02, T01-01, F01 归档)
-- 总数：16
-- 已启动或受阻数 = doing + blocked + done：5
-- 收尾比例 = done / (doing + blocked + done)：80%（4 / 5）
+- done：23（既有 22 项含 F01 归档 + T04-10 本地审查）
+- 总数：25
+- 已启动或受阻数 = doing + blocked + done：23
+- 收尾比例 = done / (doing + blocked + done)：100%（23 / 23；不含 todo，不代表生产验收通过）

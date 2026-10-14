@@ -6,12 +6,28 @@ import { processImage } from "../lib/image/codec";
  * 运行在独立的浏览器后台线程中，处理 WASM 编解码、像素双线性插值缩放与透明通道填充
  */
 
+// Worker 环境 ImageData 兜底 Polyfill，防止部分浏览器 WorkerGlobalScope 缺少原生 ImageData 构造函数
+if (typeof globalThis.ImageData === "undefined") {
+  (globalThis as any).ImageData = class ImageData {
+    data: Uint8ClampedArray;
+    width: number;
+    height: number;
+    constructor(data: Uint8ClampedArray, width: number, height: number) {
+      this.data = data;
+      this.width = width;
+      this.height = height;
+    }
+  };
+}
+
+
 // 告知主线程 Worker 启动完成
 self.postMessage({ type: "READY" } satisfies WorkerResponse);
 
 self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
   const req = event.data;
   if (!req) return;
+
 
   if (req.type === "PING") {
     self.postMessage({ type: "PONG" } satisfies WorkerResponse);
@@ -37,6 +53,7 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
         },
       });
 
+
       // 通过 Transferable 转移 ArrayBuffer 所有权，杜绝二次内存拷贝
       self.postMessage(
         {
@@ -47,7 +64,8 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
         [result.data],
       );
     } catch (err: any) {
-      let code: CompressionErrorCode = "ENCODE_FAILED";
+      console.error(`[Tiny Image Worker] Task ${taskId} failed:`, err);
+      let code: CompressionErrorCode = err?.code || "ENCODE_FAILED";
       const message = err?.message || String(err);
 
       if (message.includes("pixel") || message.includes("PIXEL_LIMIT")) {

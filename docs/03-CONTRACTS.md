@@ -1,5 +1,7 @@
 # 03｜TypeScript 数据契约、Worker 消息和状态机
 
+> 2026-10-14 实现修订（T04-07～T04-10）：输出模式包含 `keep/jpeg/png/webp`；当前 UI 提供原格式/JPEG/PNG，WebP 保留输入原格式压缩。原格式 PNG 不量化；显式转 PNG 且质量低于 100 才量化。缩放改变像素。原格式 JPEG/WebP 为有损重编码。实际验收与遗留项见 [审查报告](verification/2026-10-14-feature-audit.md)，本文件的初版目标不作为测试通过证据。
+
 > 以下为执行契约草案，Codex 必须据此实现可编译的源文件、单元测试和浏览器端对接。具体 codec API 以当前锁定版本类型定义为准。
 
 ## 1. TypeScript 合约

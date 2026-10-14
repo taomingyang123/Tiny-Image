@@ -28,7 +28,7 @@ function probePngDimensions(bytes: Uint8Array): ImageDimensions | null {
  * 从 WebP 二进制流快速提取宽高 (VP8, VP8L, VP8X)
  */
 function probeWebpDimensions(bytes: Uint8Array): ImageDimensions | null {
-  if (bytes.length < 30) return null;
+  if (bytes.length < 25) return null;
   const chunkType = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
 
   if (chunkType === "VP8X" && bytes.length >= 30) {

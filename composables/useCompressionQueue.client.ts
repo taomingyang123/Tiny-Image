@@ -13,6 +13,8 @@ import {
   isPixelLimitExceeded,
   DEFAULT_MAX_FILE_BYTES,
   DEFAULT_MAX_PIXELS_DESKTOP,
+  DEFAULT_MAX_PIXELS_MOBILE,
+  MAX_BATCH_FILES,
 } from "../lib/image/dimensions";
 import { WorkerClient, WorkerTaskError } from "../lib/image/workerClient";
 
@@ -58,12 +60,31 @@ export interface CompressionQueueOptions {
 }
 
 /**
+ * 将 Vue 响应式 Options 深度还原为无 Proxy 的原生 Plain Object
+ * 杜绝 worker.postMessage 触发 DataCloneError: #<Object> could not be cloned
+ */
+export function toPlainOptions(opt: CompressionOptions): CompressionOptions {
+  return {
+    output: opt.output,
+    quality: Number(opt.quality),
+    maxLongEdge:
+      opt.maxLongEdge !== null && opt.maxLongEdge !== undefined
+        ? Number(opt.maxLongEdge)
+        : null,
+    jpegBackground: opt.jpegBackground || "#ffffff",
+  };
+}
+
+/**
  * 核心队列管理器，解耦 Vue 响应式与底层异步任务流
  */
 export function createCompressionQueue(options?: CompressionQueueOptions) {
   const workerClient = options?.workerClient ?? new WorkerClient();
   const maxFileBytes = options?.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
-  const maxPixels = options?.maxPixels ?? DEFAULT_MAX_PIXELS_DESKTOP;
+  const maxPixels = options?.maxPixels ?? (
+    typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+      ? DEFAULT_MAX_PIXELS_MOBILE : DEFAULT_MAX_PIXELS_DESKTOP
+  );
 
   const globalOptions = ref<CompressionOptions>({
     output: "keep",
@@ -74,7 +95,9 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
   });
 
   const tasks = ref<QueueItem[]>([]) as Ref<QueueItem[]>;
-  let isScheduling = false;
+  let activeRun: symbol | null = null;
+  let validationEpoch = 0;
+  const admissionError = ref<"BATCH_LIMIT" | null>(null);
 
   const isProcessing = computed<boolean>(() => {
     return tasks.value.some((t) => t.status === "processing");
@@ -120,7 +143,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
       }
     }
 
-    const totalSaved = Math.max(0, totalOriginal - totalResult);
+    const totalSaved = totalOriginal - totalResult;
     const overallPercent =
       totalOriginal > 0 ? (totalSaved / totalOriginal) * 100 : 0;
 
@@ -144,33 +167,37 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
    * 触发下一个排队任务
    */
   const scheduleNext = async (): Promise<void> => {
-    if (isScheduling) return;
-    isScheduling = true;
+    // 互斥保护：已有调度正在执行或底层 Worker 忙碌时直接退出，等待当前任务完成事件触发
+    if (activeRun || workerClient.isBusy()) return;
+
+    const nextTask = tasks.value.find((t) => t.status === "queued");
+    if (!nextTask) return;
+
+    const run = Symbol("compression");
+    activeRun = run;
+    const isCurrent = () => activeRun === run && nextTask.status === "processing" && tasks.value.includes(nextTask);
 
     try {
-      if (workerClient.isBusy()) return;
-
-      const nextTask = tasks.value.find((t) => t.status === "queued");
-      if (!nextTask) return;
-
       nextTask.status = "processing";
       nextTask.progressPhase = "decode";
 
       try {
         // 每次重新从 File 读取 ArrayBuffer，以支持重试并安全使用 Transferable
         const buffer = await nextTask.file.arrayBuffer();
+        if (!isCurrent()) return;
 
         const result = await workerClient.process({
           taskId: nextTask.id,
           input: buffer,
           inputName: nextTask.originalName,
           mime: nextTask.detectedMime!,
-          options: nextTask.optionsSnapshot,
+          options: toPlainOptions(nextTask.optionsSnapshot),
           onProgress: (phase) => {
-            nextTask.progressPhase = phase;
+            if (isCurrent()) nextTask.progressPhase = phase;
           },
         });
 
+        if (!isCurrent()) return;
         nextTask.result = result;
         if (typeof Blob !== "undefined" && typeof URL !== "undefined") {
           nextTask.resultBlob = new Blob([result.data], { type: result.mime });
@@ -184,6 +211,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
         }
         nextTask.progressPhase = undefined;
       } catch (err: any) {
+        if (!isCurrent()) return;
         nextTask.progressPhase = undefined;
         if (err instanceof WorkerTaskError) {
           if (err.code === "CANCELLED") {
@@ -202,11 +230,12 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
         }
       }
     } finally {
-      isScheduling = false;
-      // 若还有队列等待中的任务，继续递归处理
+      if (activeRun !== run) return;
+      activeRun = null;
+      // 当前任务结束（无论成功或失败），若还有排队任务，通过异步微延迟触发下一轮调度，斩断同步递归调用栈
       const hasMore = tasks.value.some((t) => t.status === "queued");
       if (hasMore) {
-        scheduleNext();
+        setTimeout(scheduleNext, 0);
       }
     }
   };
@@ -215,129 +244,52 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
    * 添加单个或批量图片进入任务列表与校验流程
    */
   const addFiles = async (files: File[] | FileList): Promise<void> => {
-    const fileList = Array.from(files);
-    if (fileList.length === 0) return;
-
-    for (const file of fileList) {
-      const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-      // 1. 0-byte 检查
-      if (file.size === 0) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: 0,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "INVALID_FILE",
-          errorMessage: "文件大小为 0 字节，无法解析",
-        });
-        continue;
+    const epoch = validationEpoch;
+    admissionError.value = null;
+    for (const file of Array.from(files)) {
+      if (epoch !== validationEpoch) break;
+      if (tasks.value.length >= MAX_BATCH_FILES) {
+        admissionError.value = "BATCH_LIMIT";
+        break;
       }
-
-      // 2. 超限文件大小检查
-      if (file.size > maxFileBytes) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: file.size,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "FILE_TOO_LARGE",
-          errorMessage: "文件大小超过单张上限（30 MiB）",
-        });
-        continue;
-      }
-
-      // 3. 读取头部前 64 KiB 进行魔数识别与尺寸探测
-      const headerSlice = file.slice(0, 65536);
-      let headerBuffer: ArrayBuffer;
-      try {
-        headerBuffer = await headerSlice.arrayBuffer();
-      } catch (err: any) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: file.size,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "INVALID_FILE",
-          errorMessage: "无法读取文件数据",
-        });
-        continue;
-      }
-
-      const format = detectImageFormat(headerBuffer);
-      if (!format) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: file.size,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "UNSUPPORTED_FORMAT",
-          errorMessage: "暂不支持此格式，请选择 JPG、PNG 或 WebP 图片",
-        });
-        continue;
-      }
-
-      if (format.isAnimated) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: file.size,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "ANIMATED_UNSUPPORTED",
-          errorMessage: "当前版本暂不支持动图压缩",
-        });
-        continue;
-      }
-
-      // 4. 尺寸与像素安全预检
-      const dims = probeDimensions(headerBuffer);
-      if (dims && isPixelLimitExceeded(dims.width, dims.height, maxPixels)) {
-        tasks.value.push({
-          id: taskId,
-          file,
-          originalName: file.name,
-          originalBytes: file.size,
-          status: "failed",
-          optionsSnapshot: { ...globalOptions.value },
-          errorCode: "PIXEL_LIMIT",
-          errorMessage: `图片像素过大 (${dims.width}x${dims.height})，已超过安全保护上限`,
-        });
-        continue;
-      }
-
-      // 创建预览 ObjectURL
-      let previewUrl: string | undefined;
-      if (typeof URL !== "undefined") {
-        previewUrl = URL.createObjectURL(file);
-      }
-
-      // 校验全部通过，加入队列排队
+      // Reserve the slot before awaiting any file read, including concurrent uploads.
       tasks.value.push({
-        id: taskId,
-        file,
-        originalName: file.name,
-        originalBytes: file.size,
-        status: "queued",
-        optionsSnapshot: { ...globalOptions.value },
-        detectedMime: format.mime,
-        originalWidth: dims?.width,
-        originalHeight: dims?.height,
-        previewUrl,
+        id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        file, originalName: file.name, originalBytes: file.size,
+        status: "validating", optionsSnapshot: toPlainOptions(globalOptions.value),
       });
+      const task = tasks.value[tasks.value.length - 1];
+      const isCurrent = () => epoch === validationEpoch && tasks.value.includes(task) && task.status === "validating";
+      const fail = (code: CompressionErrorCode) => { task.status = "failed"; task.errorCode = code; };
+      if (file.size === 0) { fail("INVALID_FILE"); continue; }
+      if (file.size > maxFileBytes) { fail("FILE_TOO_LARGE"); continue; }
+      try {
+        let buffer = await file.slice(0, 65536).arrayBuffer();
+        if (!isCurrent()) continue;
+        let format = detectImageFormat(buffer);
+        if (!format) { fail("UNSUPPORTED_FORMAT"); continue; }
+        let dims = probeDimensions(buffer);
+        // APNG control chunks and JPEG frame headers can occur beyond the first 64 KiB.
+        if ((format.mime === "image/png" && !format.isAnimated) || !dims) {
+          buffer = await file.arrayBuffer();
+          if (!isCurrent()) continue;
+          format = detectImageFormat(buffer);
+          dims = probeDimensions(buffer);
+        }
+        if (!format) { fail("INVALID_FILE"); continue; }
+        if (format.isAnimated) { fail("ANIMATED_UNSUPPORTED"); continue; }
+        if (!dims || dims.width <= 0 || dims.height <= 0) { fail("INVALID_FILE"); continue; }
+        if (isPixelLimitExceeded(dims.width, dims.height, maxPixels)) { fail("PIXEL_LIMIT"); continue; }
+        task.detectedMime = format.mime;
+        task.originalWidth = dims.width;
+        task.originalHeight = dims.height;
+        task.previewUrl = URL.createObjectURL(file);
+        task.status = "queued";
+      } catch {
+        if (isCurrent()) fail("INVALID_FILE");
+      }
     }
-
-    // 触发调度
-    scheduleNext();
+    void scheduleNext();
   };
 
   /**
@@ -347,7 +299,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
     const task = tasks.value.find((t) => t.id === taskId);
     if (!task) return;
 
-    if (task.status === "queued") {
+    if (task.status === "queued" || task.status === "validating") {
       task.status = "cancelled";
       task.errorCode = "CANCELLED";
       task.errorMessage = "已取消";
@@ -356,9 +308,11 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
 
     if (task.status === "processing") {
       workerClient.cancelTask(taskId);
+      activeRun = null;
       task.status = "cancelled";
       task.errorCode = "CANCELLED";
       task.errorMessage = "已取消";
+      void scheduleNext();
     }
   };
 
@@ -367,7 +321,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
    */
   const retryTask = (taskId: string): void => {
     const task = tasks.value.find((t) => t.id === taskId);
-    if (!task || task.status === "queued" || task.status === "processing") {
+    if (!task || task.status === "validating" || task.status === "queued" || task.status === "processing") {
       return;
     }
 
@@ -382,6 +336,13 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
       return;
     }
 
+    // A file cancelled during validation has no verified MIME yet. Revalidate it.
+    if (!task.detectedMime) {
+      removeTask(taskId);
+      void addFiles([task.file]);
+      return;
+    }
+
     // 释放之前的压缩结果
     if (task.resultUrl && typeof URL !== "undefined") {
       URL.revokeObjectURL(task.resultUrl);
@@ -393,7 +354,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
     task.errorMessage = undefined;
 
     // 更新压缩选项为当前最新的全局配置
-    task.optionsSnapshot = { ...globalOptions.value };
+    task.optionsSnapshot = toPlainOptions(globalOptions.value);
     task.status = "queued";
 
     scheduleNext();
@@ -409,7 +370,7 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
     const task = tasks.value[index];
 
     if (task.status === "processing") {
-      workerClient.cancelTask(taskId);
+      cancelTask(taskId);
     }
 
     if (typeof URL !== "undefined") {
@@ -424,6 +385,9 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
    * 清空所有任务并释放所有 ObjectURL 内存
    */
   const clearAll = (): void => {
+    validationEpoch++;
+    activeRun = null;
+    admissionError.value = null;
     for (const task of tasks.value) {
       if (task.status === "processing") {
         workerClient.cancelTask(task.id);
@@ -437,6 +401,56 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
   };
 
   /**
+   * 将当前列表中所有支持的文件按最新全局配置重新排队并压缩
+   */
+  const recompressAll = (): void => {
+    // 若当前正在处理，强杀当前运行的 Worker 任务并重置调度互斥锁
+    if (workerClient.isBusy()) {
+      workerClient.terminate();
+    }
+    activeRun = null;
+
+    let hasRecompressed = false;
+    const needsValidation: string[] = [];
+    for (const task of tasks.value) {
+      if (task.status === "validating") continue;
+      // 永久性格式或大小超限错误不可重试，予以跳过
+      if (
+        task.errorCode === "UNSUPPORTED_FORMAT" ||
+        task.errorCode === "ANIMATED_UNSUPPORTED" ||
+        task.errorCode === "INVALID_FILE" ||
+        task.errorCode === "FILE_TOO_LARGE" ||
+        task.errorCode === "PIXEL_LIMIT"
+      ) {
+        continue;
+      }
+
+      if (!task.detectedMime) { needsValidation.push(task.id); continue; }
+
+      // 释放旧的压缩结果 URL 与状态
+      if (task.resultUrl && typeof URL !== "undefined") {
+        URL.revokeObjectURL(task.resultUrl);
+      }
+      task.resultUrl = undefined;
+      task.resultBlob = undefined;
+      task.result = undefined;
+      task.errorCode = undefined;
+      task.errorMessage = undefined;
+      task.progressPhase = undefined;
+
+      // 提取最新全局 options 快照并还原为纯对象
+      task.optionsSnapshot = toPlainOptions(globalOptions.value);
+      task.status = "queued";
+      hasRecompressed = true;
+    }
+
+    for (const id of needsValidation) retryTask(id);
+    if (hasRecompressed) {
+      scheduleNext();
+    }
+  };
+
+  /**
    * 销毁队列与底层的 Worker 线程
    */
   const destroy = (): void => {
@@ -447,11 +461,13 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
   return {
     tasks,
     globalOptions,
+    admissionError,
     isProcessing,
     stats,
     addFiles,
     cancelTask,
     retryTask,
+    recompressAll,
     removeTask,
     clearAll,
     destroy,
@@ -460,9 +476,19 @@ export function createCompressionQueue(options?: CompressionQueueOptions) {
 
 export type CompressionQueue = ReturnType<typeof createCompressionQueue>;
 
+let sharedClientQueue: CompressionQueue | null = null;
+
 /**
  * Nuxt 客户端 Composable
+ * 默认使用共享单例，保证多语言路由切换（/、/en/、/ja/）时不丢失现有任务状态；
+ * 若显式提供 options（如测试隔离或独立调度），则创建新独立队列。
  */
-export function useCompressionQueue(options?: CompressionQueueOptions) {
-  return createCompressionQueue(options);
+export function useCompressionQueue(options?: CompressionQueueOptions): CompressionQueue {
+  if (options) {
+    return createCompressionQueue(options);
+  }
+  if (!sharedClientQueue) {
+    sharedClientQueue = createCompressionQueue();
+  }
+  return sharedClientQueue;
 }

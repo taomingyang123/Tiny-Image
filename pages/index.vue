@@ -12,16 +12,41 @@ usePageSeo({
   applicationCategory: "MultimediaApplication",
 });
 
+const faqJsonLd = computed(() => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [1, 2, 3, 4, 5].map((i) => ({
+    "@type": "Question",
+    name: t(`faq.q${i}`),
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: t(`faq.a${i}`),
+    },
+  })),
+}));
+
+useHead(() => ({
+  script: [
+    {
+      type: "application/ld+json",
+      key: "faq-ld-json",
+      children: JSON.stringify(faqJsonLd.value).replace(/</g, "\\u003c"),
+    },
+  ],
+}));
+
 // 客户端压缩队列与状态管理
 const queue = useCompressionQueue();
 const {
   tasks,
   globalOptions,
+  admissionError,
   isProcessing,
   stats,
   addFiles,
   cancelTask,
   retryTask,
+  recompressAll,
   removeTask,
   clearAll,
 } = queue;
@@ -65,20 +90,20 @@ const handleDownloadActiveCompare = () => {
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
           </svg>
-          <span>零上传 · 隐私无忧</span>
+          <span>{{ t("home.featureNoUpload") }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
           </svg>
-          <span>WASM 极速多线程</span>
+          <span>{{ t("home.featureFastWasm") }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-purple-400" viewBox="0 0 20 20" fill="currentColor">
             <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
             <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
           </svg>
-          <span>JPG / PNG / WebP 批量处理</span>
+          <span>{{ t("home.featureBatch") }}</span>
         </div>
       </div>
     </header>
@@ -97,6 +122,8 @@ const handleDownloadActiveCompare = () => {
           @files-added="addFiles"
         />
 
+        <p v-if="admissionError" role="alert" class="text-sm text-amber-300">{{ t(`errors.${admissionError}`) }}</p>
+
         <!-- 任务列表与控制栏 -->
         <ImageTaskList
           :tasks="tasks"
@@ -104,6 +131,7 @@ const handleDownloadActiveCompare = () => {
           :is-processing="isProcessing"
           @cancel="cancelTask"
           @retry="retryTask"
+          @recompress-all="recompressAll"
           @remove="removeTask"
           @clear-all="clearAll"
           @compare="handleOpenCompare"
@@ -114,7 +142,7 @@ const handleDownloadActiveCompare = () => {
       <template #fallback>
         <div class="glass rounded-3xl p-12 text-center border border-white/10 space-y-4">
           <div class="w-12 h-12 rounded-full bg-cyan-500/20 mx-auto animate-pulse"></div>
-          <p class="text-sm text-gray-400">正在载入 WebAssembly 本地处理引擎...</p>
+          <p class="text-sm text-gray-400">{{ t("home.engineLoading") }}</p>
         </div>
       </template>
     </ClientOnly>

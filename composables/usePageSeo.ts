@@ -32,7 +32,7 @@ export const usePageSeo = (options: UseSeoOptions) => {
     const siteUrl = String(runtimeConfig.public.siteUrl).replace(/\/+$/, "");
     const siteName = String(runtimeConfig.public.siteName);
     const defaultImage = String(runtimeConfig.public.siteImage || "");
-    const withBrandSuffix = (value: string) => value === siteName ? value : `${value} | ${siteName}`;
+    const withBrandSuffix = (value: string) => value === siteName || value.endsWith(` | ${siteName}`) ? value : `${value} | ${siteName}`;
 
     const title = computed(() => withBrandSuffix(options.title || (options.titleKey ? t(options.titleKey) : siteName)));
     const description = computed(() => options.description || (options.descriptionKey ? t(options.descriptionKey) : ""));

@@ -12,18 +12,32 @@ export function resolveOutputMime(
   option: OutputMode,
 ): SupportedOutput {
   if (option === "keep") return input;
-  return option === "jpeg" ? "image/jpeg" : "image/webp";
+  if (option === "jpeg") return "image/jpeg";
+  if (option === "png") return "image/png";
+  return "image/webp";
 }
 
 /**
- * 判断是否应走 PNG 二进制无损优化路径（直接通过 OxiPNG 处理，不经过 Canvas 重采样）
+ * 判断是否应走 PNG 二进制纯无损优化路径（直接通过 OxiPNG 处理，不经过重采样与色彩量化）
+ * 核心准则：
+ * 1. 保持原格式（keep）且未缩放尺寸时，PNG 默认 100% 走纯无损优化通道，保证每一个像素与半透明渐变投影绝对不变，绝不改图；
+ * 2. 只有当明确转为 PNG 且质量参数 < 100 时，才走智能色彩量化通道。
  */
 export function shouldUseLosslessPngPath(
   input: SupportedInput,
   output: SupportedOutput,
   maxLongEdge: number | null,
+  outputMode: OutputMode = "keep",
+  quality?: number,
 ): boolean {
-  return input === "image/png" && output === "image/png" && maxLongEdge === null;
+  if (input !== "image/png" || output !== "image/png" || maxLongEdge !== null) {
+    return false;
+  }
+  // 保持原格式时，必须保证绝对无损
+  if (outputMode === "keep") {
+    return true;
+  }
+  return typeof quality !== "number" || quality >= 100;
 }
 
 /**
@@ -101,12 +115,12 @@ export function sanitizeFilename(
   originalName: string,
   targetExt: "jpg" | "png" | "webp",
 ): string {
-  // 1. 移除路径分割符与不安全文件名字符
+  // 1. 移除路径分割符与不安全文件名字符、处理连续点号
   let safeBase = originalName
     .replace(/[/\\?%*:|"<>#]/g, "_")
     .replace(/\.\.+/g, "_")
     // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1f\x80-\x9f]/g, "")
+    .replace(/[\x00-\x1f\x7f\x80-\x9f]/g, "")
     .trim();
 
   // 2. 剥离原有扩展名
@@ -115,7 +129,8 @@ export function sanitizeFilename(
     safeBase = safeBase.substring(0, dotIndex);
   }
 
-  if (!safeBase) {
+  // 3. 若清理后为空或全是下划线，兜底为 image
+  if (!safeBase || !safeBase.replace(/_/g, "")) {
     safeBase = "image";
   }
 
@@ -126,18 +141,19 @@ export function sanitizeFilename(
  * 对批量导出的文件名进行稳定去重（例如 photo.webp, photo-2.webp）
  */
 export function deduplicateFilenames(names: string[]): string[] {
-  const seenCount = new Map<string, number>();
+  const used = new Set<string>();
+  const reserved = new Set(names.map(name => name.toLowerCase()));
   return names.map((name) => {
     const dotIndex = name.lastIndexOf(".");
-    const base = dotIndex > 0 ? name.substring(0, dotIndex) : name;
-    const ext = dotIndex > 0 ? name.substring(dotIndex) : "";
-
-    const count = (seenCount.get(name) || 0) + 1;
-    seenCount.set(name, count);
-
-    if (count === 1) {
-      return name;
+    const base = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+    const ext = dotIndex > 0 ? name.slice(dotIndex) : "";
+    let candidate = name;
+    let suffix = 2;
+    while (used.has(candidate.toLowerCase())) {
+      do { candidate = `${base}-${suffix++}${ext}`; }
+      while (used.has(candidate.toLowerCase()) || reserved.has(candidate.toLowerCase()));
     }
-    return `${base}-${count}${ext}`;
+    used.add(candidate.toLowerCase());
+    return candidate;
   });
 }

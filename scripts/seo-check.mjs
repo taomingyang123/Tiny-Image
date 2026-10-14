@@ -26,6 +26,15 @@ const rules = fs.existsSync(redirects) ? fs.readFileSync(redirects, "utf8").spli
   .map(line => line.trim()).filter(line => line && !line.startsWith("#")) : [];
 const expectedRules = INDEXABLE_ROUTES.filter(route => route !== "/").map(route => `${route.slice(0, -1)} ${route} 301`);
 if (rules.length !== expectedRules.length || expectedRules.some(rule => !rules.includes(rule))) errors.push("Canonical asset redirects mismatch");
+
+const headers = path.join(publicDir, "_headers");
+if (!fs.existsSync(headers) || !fs.readFileSync(headers, "utf8").includes("Content-Security-Policy")) {
+  errors.push("Missing or invalid _headers with Content-Security-Policy");
+}
+if (!fs.existsSync(path.join(publicDir, "third-party-licenses.txt"))) errors.push("Missing third-party license notices");
+for (const route of ["dev", "en/dev", "ja/dev"]) {
+  if (fs.existsSync(path.join(publicDir, route, "codec-spike/index.html"))) errors.push("Development Spike was published");
+}
 if (errors.length) {
   errors.forEach(error => console.error(error));
   process.exitCode = 1;

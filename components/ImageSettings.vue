@@ -54,7 +54,7 @@ const currentEdgePreset = computed({
     } else if (preset === "custom") {
       emit("update:modelValue", {
         ...props.modelValue,
-        maxLongEdge: props.modelValue.maxLongEdge || 1024,
+        maxLongEdge: 1024,
       });
     }
   },
@@ -63,18 +63,19 @@ const currentEdgePreset = computed({
 const customEdgeValue = computed({
   get: () => props.modelValue.maxLongEdge ?? 1024,
   set: (val: number) => {
-    const num = Math.min(10000, Math.max(1, Math.round(val)));
+    if (!Number.isFinite(Number(val))) return;
+    const num = Math.min(10000, Math.max(1, Math.round(Number(val))));
     emit("update:modelValue", { ...props.modelValue, maxLongEdge: num });
   },
 });
 
-const isLosslessPngOnly = computed(() => {
-  return props.modelValue.output === "keep";
-});
+
 </script>
 
 <template>
-  <div
+  <fieldset
+    :disabled="disabled"
+    data-testid="settings"
     class="glass rounded-2xl p-5 md:p-6 transition-all duration-300 border border-white/10 shadow-xl"
     :class="{ 'opacity-60 pointer-events-none': disabled }"
   >
@@ -99,39 +100,42 @@ const isLosslessPngOnly = computed(() => {
         <div class="grid grid-cols-3 gap-1.5 p-1 bg-gray-900/60 rounded-xl border border-white/5">
           <button
             type="button"
-            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200"
+            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer"
             :class="
               currentOutput === 'keep'
                 ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
             "
+            data-output="keep"
             @click="currentOutput = 'keep'"
           >
             {{ t("settings.formatKeep") }}
           </button>
           <button
             type="button"
-            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200"
+            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer"
             :class="
               currentOutput === 'jpeg'
                 ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
             "
+            data-output="jpeg"
             @click="currentOutput = 'jpeg'"
           >
             JPEG
           </button>
           <button
             type="button"
-            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200"
+            class="py-2 px-2 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer"
             :class="
-              currentOutput === 'webp'
+              currentOutput === 'png'
                 ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm'
                 : 'text-gray-400 hover:text-gray-200'
             "
-            @click="currentOutput = 'webp'"
+            data-output="png"
+            @click="currentOutput = 'png'"
           >
-            WebP
+            {{ t("settings.formatPng") }}
           </button>
         </div>
         <p v-if="currentOutput === 'jpeg'" class="text-[11px] text-amber-300/80">
@@ -153,7 +157,7 @@ const isLosslessPngOnly = computed(() => {
                 : 'bg-cyan-950/40 text-cyan-300 border border-cyan-500/30'
             "
           >
-            {{ currentOutput === 'keep' ? t("settings.losslessSmart") : `${currentQuality}%` }}
+            {{ currentOutput === 'keep' ? t("settings.keepMode") : `${currentQuality}` }}
           </span>
         </div>
 
@@ -162,6 +166,7 @@ const isLosslessPngOnly = computed(() => {
             v-if="currentOutput !== 'keep'"
             v-model.number="currentQuality"
             type="range"
+            :aria-label="t('settings.quality')"
             min="1"
             max="100"
             step="1"
@@ -169,17 +174,22 @@ const isLosslessPngOnly = computed(() => {
           />
           <div
             v-else
-            class="p-2 rounded-xl bg-gray-900/40 border border-white/5 text-[11px] text-gray-400 flex items-center gap-1.5"
+            class="p-2.5 rounded-xl bg-gray-900/40 border border-white/5 text-[11px] text-gray-400 flex items-center gap-1.5"
           >
-            <span class="text-cyan-400">✓</span>
-            <span>{{ t("settings.pngLosslessDesc") }}</span>
+            <span class="text-cyan-400 font-bold">✓</span>
+            <span>{{ t("settings.keepDesc") }}</span>
           </div>
         </div>
-        <div v-if="currentOutput !== 'keep'" class="flex justify-between text-[10px] text-gray-500 font-mono">
-          <span>{{ t("settings.qualityLow") }} (小体积)</span>
-          <span class="text-cyan-400/80 font-bold">推荐 80</span>
-          <span>{{ t("settings.qualityHigh") }} (高画质)</span>
-        </div>
+        <template v-if="currentOutput !== 'keep'">
+          <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+            <span>{{ t("settings.qualityLow") }}</span>
+            <span class="text-cyan-400/80 font-bold">{{ t("settings.recommended") }} 80</span>
+            <span>{{ t("settings.qualityHigh") }}</span>
+          </div>
+          <p v-if="currentOutput === 'png'" class="text-[11px] text-cyan-300/80">
+            * {{ t("settings.pngSmartDesc") }}
+          </p>
+        </template>
       </div>
 
       <!-- 3. 最长边等比缩放 -->
@@ -242,15 +252,16 @@ const isLosslessPngOnly = computed(() => {
           <input
             v-model.number="customEdgeValue"
             type="number"
+            :aria-label="t('settings.maxLongEdge')"
             min="100"
             max="10000"
             step="10"
             class="w-full bg-gray-900 border border-cyan-500/40 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-cyan-400 font-mono"
-            placeholder="像素值 (例: 1024)"
+            :placeholder="t('settings.pixelPlaceholder')"
           />
           <span class="text-xs text-gray-400 font-mono">px</span>
         </div>
       </div>
     </div>
-  </div>
+  </fieldset>
 </template>

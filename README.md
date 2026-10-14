@@ -9,7 +9,7 @@ Tiny Image 是一个纯前端、可静态部署（Cloudflare Pages SSG）的独�
 - **零服务端处理**：图片所有像素解码与编码均在浏览器本地 Web Worker 内运行，绝不上传到任何服务器或第三方接口。
 - **现代格式支持**：
   - JPEG：MozJPEG 有损编码器，支持质量 1–100。
-  - PNG：OxiPNG 二进制无损优化；无压缩收益时保留原图并如实展示。
+  - PNG：原格式不缩放走无损优化；显式 PNG 转换质量低于 100 时进行有损量化；缩放会改变像素。
   - WebP：支持 WebP 编码，保留透明通道。
 - **多语言与静态 SEO**：
   - 默认中文：`/`
@@ -45,7 +45,8 @@ yarn preview
 # 门禁与校验
 yarn check       # 包含类型检查、单元测试与静态生成验证
 yarn test:unit   # 运行 Vitest 单元测试
-yarn test:e2e    # 运行 Playwright 端到端浏览器测试
+yarn test:e2e    # 已 generate 后，用本地 Chrome 验证生产 Worker/WASM 与下载（无需外部服务）
+yarn licenses:build # 从本地安装包生成第三方许可声明
 ```
 
 ## 规范文档目录
@@ -58,3 +59,11 @@ yarn test:e2e    # 运行 Playwright 端到端浏览器测试
 - [`docs/06-TEST-ACCEPTANCE.md`](docs/06-TEST-ACCEPTANCE.md)：测试矩阵与验收标准
 - [`docs/07-TASKS.md`](docs/07-TASKS.md)：分阶段任务拆分与执行依赖
 - [`docs/08-RISK-AND-DECISIONS.md`](docs/08-RISK-AND-DECISIONS.md)：架构决策 (ADR) 与风险清单
+
+## 当前验证与版权收费
+
+本地门禁与真实 Chrome 验收结果见 [功能审查报告](docs/verification/2026-10-14-feature-audit.md)。跨浏览器真机、生产部署和素材/上游授权来源尚有待办；不能由任务标签推断生产验收完成。
+
+没有会员、支付、订阅或收费压缩 API；统计与广告固定关闭。托管和域名等基础设施实际账单未核对。依赖许可声明见 [第三方 notices](public/third-party-licenses.txt)，依赖清单见 [安装包记录](docs/verification/dependency-licenses.json)。本项目自身未授予对外开源许可。
+
+系统级测试需要本机 Chrome（默认 macOS `/Applications/Google Chrome.app/...`，Linux `/usr/bin/google-chrome`），其他路径设置 `CHROME_PATH`。测试使用隔离临时用户目录及 127.0.0.1 静态服务；它模拟本地 CSP，不能替代 Cloudflare 的真实响应头验收。

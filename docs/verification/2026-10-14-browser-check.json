@@ -1,0 +1,123 @@
+{
+  "browser": "Local Chrome via CDP",
+  "checks": [
+    {
+      "name": "No WASM loaded on idle first page"
+    },
+    {
+      "name": "Real Worker compresses PNG/JPEG/WebP; bad input is isolated"
+    },
+    {
+      "name": "WASM requests use valid URLs, HTTP 200 and MIME",
+      "count": 5
+    },
+    {
+      "name": "Downloaded ZIP has three successful images"
+    },
+    {
+      "name": "All downloaded JPEG/PNG/WebP results decode at original dimensions"
+    },
+    {
+      "name": "English route preserves queue and translates errors"
+    },
+    {
+      "name": "Japanese route preserves queue"
+    },
+    {
+      "name": "Comparison dialog traps keyboard focus and exposes an accessible slider"
+    },
+    {
+      "name": "PNG -> JPEG alpha composites onto white",
+      "size": [
+        96,
+        64
+      ],
+      "pixel": [
+        254,
+        178,
+        178,
+        255
+      ]
+    },
+    {
+      "name": "Original image can be downloaded"
+    },
+    {
+      "name": "WebP -> explicit quantized PNG works"
+    },
+    {
+      "name": "PNG output preserves partial transparency",
+      "alpha": 77
+    },
+    {
+      "name": "390px mobile page has no horizontal overflow"
+    },
+    {
+      "name": "Batch upload enforces 20 images with a visible message"
+    },
+    {
+      "name": "Clear removes all result and preview entries"
+    },
+    {
+      "name": "Cancel interrupts a real in-progress Worker task"
+    },
+    {
+      "name": "Cancelled task retries with a fresh Worker"
+    },
+    {
+      "name": "Six public pages and license notices exist; dev Spike is excluded"
+    },
+    {
+      "name": "Page and Workers make no external or upload requests"
+    },
+    {
+      "name": "No runtime exceptions or CSP errors"
+    }
+  ],
+  "exceptions": [],
+  "logErrors": [],
+  "wasm": [
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/squoosh_oxipng_bg-OFMN1KwG.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/mozjpeg_dec-muSO2n8T.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/mozjpeg_enc-DO-zoExo.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/webp_dec-C990n7mh.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/webp_enc_simd-CFvKQ_80.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/squoosh_png_bg-DAY7U9NW.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/squoosh_png_bg-DAY7U9NW.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    },
+    {
+      "wasm": "http://127.0.0.1:60949/_nuxt/squoosh_oxipng_bg-OFMN1KwG.wasm",
+      "status": 200,
+      "mime": "application/wasm"
+    }
+  ],
+  "screenshot": "/var/folders/5k/vntkx6b16cx4270pwy8qhwjr0000gn/T/tiny-image-browser-m0HsDU/mobile.png",
+  "downloads": "/var/folders/5k/vntkx6b16cx4270pwy8qhwjr0000gn/T/tiny-image-browser-m0HsDU/downloads"
+}

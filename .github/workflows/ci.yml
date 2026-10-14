@@ -1,22 +1,58 @@
-# 复制为仓库 .github/workflows/ci.yml 后生效。
-name: CI
+name: CI & Quality Gate
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  gate:
+    name: Typecheck, Test, Generate & SEO Gate
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Install
+          cache: 'yarn'
+
+      - name: Enable Corepack & Configure Yarn
+        run: |
+          corepack enable
+          corepack yarn --version
+
+      - name: Install Dependencies
         run: yarn install --immutable
-      - name: Typecheck lint unit and static generation
+
+      - name: Run Full Quality Gate (Typecheck + Unit/Security Tests + SSG Generate + SEO/CSP Assertions)
         run: yarn check
-      # 等 Playwright 添加后，可加入独立 e2e job；不要在未安装浏览器时假称已运行。
+
+      - name: Run Local Chrome Production Browser Checks
+        run: yarn test:e2e
+
+      - name: Verify Cloudflare Pages Output Assets
+        run: |
+          test -f .output/public/index.html || exit 1
+          test -f .output/public/en/index.html || exit 1
+          test -f .output/public/ja/index.html || exit 1
+          test -f .output/public/_headers || exit 1
+          test -f .output/public/_redirects || exit 1
+          test -f .output/public/sitemap.xml || exit 1
+          test -f .output/public/robots.txt || exit 1
+          echo "All critical Cloudflare Pages deployment assets verified."
+
+      - name: Upload Static Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-pages-dist
+          path: .output/public
+          retention-days: 7

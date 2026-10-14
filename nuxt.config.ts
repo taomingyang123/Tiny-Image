@@ -9,6 +9,7 @@ import { INDEXABLE_ROUTES, SITEMAP_URLS } from "./config/indexableRoutes.js";
 export default defineNuxtConfig({
   compatibilityDate: "2024-09-19",
   ssr: true,
+  telemetry: false,
   devtools: { enabled: true },
   experimental: { defaults: { nuxtLink: { trailingSlash: "append" } } },
   modules: ["@nuxtjs/tailwindcss", "@nuxtjs/i18n", "@nuxtjs/sitemap", "nuxt-gtag", "@vueuse/nuxt"],
@@ -27,6 +28,14 @@ export default defineNuxtConfig({
   vite: {
     worker: {
       format: "es",
+    },
+    optimizeDeps: {
+      exclude: [
+        "@jsquash/oxipng",
+        "@jsquash/png",
+        "@jsquash/jpeg",
+        "@jsquash/webp",
+      ],
     },
     css: { preprocessorOptions: { scss: { additionalData: cssModule.resources } } },
   },
@@ -56,7 +65,7 @@ export default defineNuxtConfig({
     compatibilityDate: "2024-09-19",
     preset: process.env.NITRO_PRESET || "cloudflare-module",
     minify: false,
-    prerender: { crawlLinks: false, routes: [...INDEXABLE_ROUTES, "/dev/codec-spike", "/sitemap.xml", "/robots.txt"] },
+    prerender: { ignore: [/^\/(?:en\/|ja\/)?dev(?:\/|$)/], crawlLinks: false, routes: [...INDEXABLE_ROUTES, "/sitemap.xml", "/robots.txt"] },
     cloudflare: { nodeCompat: true, wrangler: { name: "tinystool-image-tools" } },
   },
 });

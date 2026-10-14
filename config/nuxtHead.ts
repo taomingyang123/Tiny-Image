@@ -12,9 +12,5 @@ export default {
     ...(siteConfig.bingVerification
       ? [{ name: "msvalidate.01", content: siteConfig.bingVerification }] : []),
   ],
-  script: siteConfig.adsenseClient ? [{
-    async: true,
-    src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsenseClient}`,
-    crossorigin: "anonymous" as const,
-  }] : [],
+  script: [],
 };

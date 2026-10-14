@@ -1,5 +1,7 @@
 # 01｜产品需求说明 PRD
 
+> 2026-10-14 实现修订（T04-07～T04-10）：输出模式包含 `keep/jpeg/png/webp`；当前 UI 提供原格式/JPEG/PNG，WebP 保留输入原格式压缩。原格式 PNG 不量化；显式转 PNG 且质量低于 100 才量化。缩放改变像素。原格式 JPEG/WebP 为有损重编码。实际验收与遗留项见 [审查报告](verification/2026-10-14-feature-audit.md)，本文件的初版目标不作为测试通过证据。
+
 ## 1. 目标与定位
 
 产品：Tiny Image；正式地址 `https://image.tinystool.org/`。核心价值：无需注册、无需上传、纯浏览器本地完成图片压缩。面向个人站长、前端开发者、内容运营、普通用户。站点与 tinystool.org 主站仓库/部署解耦。

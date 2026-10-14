@@ -62,17 +62,14 @@ function isAnimatedWebp(bytes: Uint8Array): boolean {
     }
   }
 
-  // 兜底扫描是否存在 'ANIM' chunk
-  const animTag = [0x41, 0x4e, 0x49, 0x4d]; // 'ANIM'
-  for (let i = 12; i < bytes.length - 4; i++) {
-    if (
-      bytes[i] === animTag[0] &&
-      bytes[i + 1] === animTag[1] &&
-      bytes[i + 2] === animTag[2] &&
-      bytes[i + 3] === animTag[3]
-    ) {
-      return true;
-    }
+  // Walk actual RIFF chunk boundaries; payload bytes are not chunk identifiers.
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let offset = 12;
+  while (offset + 8 <= bytes.length) {
+    const tag = String.fromCharCode(...bytes.subarray(offset, offset + 4));
+    if (tag === "ANIM" || tag === "ANMF") return true;
+    const length = view.getUint32(offset + 4, true);
+    offset += 8 + length + (length % 2);
   }
 
   return false;

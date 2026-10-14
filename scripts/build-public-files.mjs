@@ -11,6 +11,11 @@ const redirects = INDEXABLE_ROUTES.filter(route => route !== "/")
 write("_redirects", `# Generated from config/indexableRoutes.js\n${redirects.join("\n")}\n`);
 write("robots.txt", `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
+const headersSource = path.resolve("public/_headers");
+if (fs.existsSync(headersSource)) {
+  fs.copyFileSync(headersSource, path.join(output, "_headers"));
+}
+
 if (siteConfig.adsenseClient) {
   write("ads.txt", `google.com, ${siteConfig.adsenseClient.replace(/^ca-/, "")}, DIRECT, f08c47fec0942fa0\n`);
 }

@@ -150,15 +150,18 @@ describe("T01-01: 核心决策函数策略 (policy.ts)", () => {
   it("resolveOutputMime 正确决策", () => {
     expect(resolveOutputMime("image/jpeg", "keep")).toBe("image/jpeg");
     expect(resolveOutputMime("image/png", "keep")).toBe("image/png");
+    expect(resolveOutputMime("image/jpeg", "png")).toBe("image/png");
     expect(resolveOutputMime("image/jpeg", "webp")).toBe("image/webp");
     expect(resolveOutputMime("image/png", "jpeg")).toBe("image/jpeg");
   });
 
-  it("shouldUseLosslessPngPath: 仅针对同格式且未改变尺寸的 PNG 生效", () => {
-    expect(shouldUseLosslessPngPath("image/png", "image/png", null)).toBe(true);
-    expect(shouldUseLosslessPngPath("image/png", "image/png", 1920)).toBe(false);
-    expect(shouldUseLosslessPngPath("image/png", "image/webp", null)).toBe(false);
-    expect(shouldUseLosslessPngPath("image/jpeg", "image/jpeg", null)).toBe(false);
+  it("shouldUseLosslessPngPath: 保持原格式且未改变尺寸时必须保证纯无损，不改图", () => {
+    expect(shouldUseLosslessPngPath("image/png", "image/png", null, "keep")).toBe(true);
+    expect(shouldUseLosslessPngPath("image/png", "image/png", null, "png", 100)).toBe(true);
+    expect(shouldUseLosslessPngPath("image/png", "image/png", null, "png", 80)).toBe(false);
+    expect(shouldUseLosslessPngPath("image/png", "image/png", 1920, "keep")).toBe(false);
+    expect(shouldUseLosslessPngPath("image/png", "image/webp", null, "webp")).toBe(false);
+    expect(shouldUseLosslessPngPath("image/jpeg", "image/jpeg", null, "keep")).toBe(false);
   });
 
   it("savingsPercent 正确处理正值、负值与零", () => {

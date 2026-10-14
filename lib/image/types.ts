@@ -5,12 +5,12 @@
 
 export type SupportedInput = 'image/jpeg' | 'image/png' | 'image/webp';
 export type SupportedOutput = SupportedInput;
-export type OutputMode = 'keep' | 'jpeg' | 'webp';
+export type OutputMode = 'keep' | 'jpeg' | 'png' | 'webp';
 
 export interface CompressionOptions {
-  /** 输出目标格式：保持原格式、转 JPEG、转 WebP */
+  /** 输出目标格式：保持原格式、转 JPEG、转 PNG、转 WebP */
   output: OutputMode;
-  /** 整数 1..100；仅 JPEG/WebP 有损编码生效 */
+  /** 整数 1..100；JPEG 有损编码或 PNG 智能色彩量化生效 */
   quality: number;
   /** 最长边限制：null 为不改变原图尺寸；1..10000 为有效像素 */
   maxLongEdge: number | null;

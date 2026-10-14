@@ -77,7 +77,7 @@ describe("T01-02: Codec 适配器与图像管线 (lib/image/codec/)", () => {
       inputMime: "image/png",
       options: {
         output: "keep",
-        quality: 80,
+        quality: 100,
         maxLongEdge: null,
         jpegBackground: "#ffffff",
       },
@@ -86,6 +86,43 @@ describe("T01-02: Codec 适配器与图像管线 (lib/image/codec/)", () => {
     expect(result.mime).toBe("image/png");
     expect(result.extension).toBe("png");
     expect(result.mode).toBe("lossless");
+    expect(result.resultBytes).toBeGreaterThan(0);
+  });
+
+  it("processImage: 路径 A2 - PNG 智能色彩量化深度压缩通道 (quality < 100)", async () => {
+    // 构造一个 4x4 RGBA 的有效 PNG 缓冲
+    const fixturePath = "tests/unit/fixtures/sample.png";
+    let inputBuffer: ArrayBuffer;
+    if (fs.existsSync(fixturePath)) {
+      const buf = fs.readFileSync(fixturePath);
+      inputBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+    } else {
+      const binary = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZSURBVBhXY2AYBYqLi//D8V98fHyMhBEAAJ0/CQVq+f6KAAAAAElFTkSuQmCC",
+        "base64",
+      );
+      inputBuffer = binary.buffer.slice(
+        binary.byteOffset,
+        binary.byteOffset + binary.byteLength,
+      );
+    }
+
+    const result = await processImage({
+      id: "task-png-quant",
+      originalName: "test-quant.png",
+      inputBuffer,
+      inputMime: "image/png",
+      options: {
+        output: "png",
+        quality: 80,
+        maxLongEdge: null,
+        jpegBackground: "#ffffff",
+      },
+    });
+
+    expect(result.mime).toBe("image/png");
+    expect(result.extension).toBe("png");
+    expect(result.mode).toBe("lossy");
     expect(result.resultBytes).toBeGreaterThan(0);
   });
 

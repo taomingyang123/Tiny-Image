@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
 const { locale } = useI18n();
 
 const htmlLang = computed(() => {
@@ -7,7 +10,12 @@ const htmlLang = computed(() => {
   return "en";
 });
 
-useHead(() => ({ htmlAttrs: { lang: htmlLang.value } }));
+useHead(() => ({
+  htmlAttrs: {
+    lang: htmlLang.value,
+    class: "dark",
+  },
+}));
 </script>
 
 <template>

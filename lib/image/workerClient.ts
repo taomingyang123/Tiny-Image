@@ -37,6 +37,7 @@ export class WorkerClient {
   private workerFactory: () => Worker;
   private defaultTimeoutMs: number;
   private currentTaskId: string | null = null;
+  private activeCleanup: (() => void) | null = null;
   private activeReject: ((reason?: any) => void) | null = null;
   private timeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -58,6 +59,13 @@ export class WorkerClient {
   private getOrCreateWorker(): Worker {
     if (!this.worker) {
       this.worker = this.workerFactory();
+      this.worker.addEventListener("message", (e) => {
+        if (e.data?.type === "READY") {
+        }
+      });
+      this.worker.addEventListener("error", (err) => {
+        console.error("[Tiny Image WorkerClient] Global worker onerror:", err.message, err);
+      });
     }
     return this.worker;
   }
@@ -85,6 +93,7 @@ export class WorkerClient {
 
     if (this.activeReject && this.currentTaskId) {
       const reject = this.activeReject;
+      this.activeCleanup?.();
       this.activeReject = null;
       this.currentTaskId = null;
       reject(new WorkerTaskError(reasonCode, message));
@@ -133,8 +142,12 @@ export class WorkerClient {
       timeoutMs = this.defaultTimeoutMs,
     } = params;
 
+    if (typeof Worker === "undefined" && typeof window !== "undefined" && !this.worker) {
+      throw new WorkerTaskError("UNSUPPORTED_BROWSER", "Web Workers are unavailable");
+    }
     const worker = this.getOrCreateWorker();
     this.currentTaskId = taskId;
+
 
     return new Promise<CompressionResult>((resolve, reject) => {
       this.activeReject = reject;
@@ -151,11 +164,13 @@ export class WorkerClient {
         this.clearTimeoutTimer();
         worker.removeEventListener("message", handleMessage);
         worker.removeEventListener("error", handleError);
+        this.activeCleanup = null;
         this.activeReject = null;
         this.currentTaskId = null;
       };
 
       const handleMessage = (event: MessageEvent<WorkerResponse>) => {
+        if (this.worker !== worker || this.currentTaskId !== taskId) return;
         const msg = event.data;
         if (!msg) return;
 
@@ -172,37 +187,66 @@ export class WorkerClient {
 
         if (msg.type === "ERROR" && msg.taskId === taskId) {
           cleanupListeners();
+          if (msg.code === "WASM_LOAD_FAILED" || msg.code === "OUT_OF_MEMORY") {
+            worker.terminate();
+            this.worker = null;
+          }
           reject(new WorkerTaskError(msg.code, msg.message));
         }
       };
 
       const handleError = (errorEvent: ErrorEvent) => {
+        console.error("[Tiny Image workerClient onerror]:", errorEvent.message, errorEvent.error || errorEvent);
         cleanupListeners();
         // Worker 崩溃时终止并重置
         this.worker?.terminate();
         this.worker = null;
+        const msg = errorEvent.message || (errorEvent.error ? String(errorEvent.error) : "Worker execution error");
         reject(
           new WorkerTaskError(
             "UNKNOWN",
-            errorEvent.message || "Unknown worker error",
+            msg,
           ),
         );
       };
 
+      this.activeCleanup = cleanupListeners;
       worker.addEventListener("message", handleMessage);
       worker.addEventListener("error", handleError);
+
+      // 深度纯化 options 为原生 Plain Object，杜绝 Vue Proxy 导致 postMessage 触发 DataCloneError
+      const safeOptions: CompressionOptions = {
+        output: options.output,
+        quality: Number(options.quality),
+        maxLongEdge:
+          options.maxLongEdge !== null && options.maxLongEdge !== undefined
+            ? Number(options.maxLongEdge)
+            : null,
+        jpegBackground: options.jpegBackground || "#ffffff",
+      };
 
       // 发送请求，通过 Transferable 转移 input 避免双倍内存
       const request: WorkerRequest = {
         type: "PROCESS",
-        taskId,
+        taskId: String(taskId),
         input,
-        inputName,
+        inputName: String(inputName),
         mime,
-        options,
+        options: safeOptions,
       };
 
-      worker.postMessage(request, [input]);
+      try {
+        worker.postMessage(request, [input]);
+      } catch (postErr: any) {
+        console.error("[Tiny Image WorkerClient] postMessage failed:", postErr);
+        cleanupListeners();
+        reject(
+          new WorkerTaskError(
+            "UNKNOWN",
+            `Failed to dispatch task to worker: ${postErr?.message || postErr}`,
+          ),
+        );
+      }
     });
   }
 }
