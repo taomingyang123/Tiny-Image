@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-19",
+  "kind": "confirmed-current-bugs-not-fixed",
+  "findings": [
+    {
+      "task": "T04-14",
+      "case": "transparent-resize-edge",
+      "actual": [
+        128,
+        0,
+        0,
+        128
+      ],
+      "expectedPremultipliedAlpha": [
+        255,
+        0,
+        0,
+        128
+      ],
+      "effect": "RGB interpolation includes invisible black, darkening partially transparent edges."
+    },
+    {
+      "task": "T04-14",
+      "case": "resize-to-one-pixel",
+      "actual": [
+        255,
+        0,
+        0,
+        255
+      ],
+      "expectedCenterSample": [
+        128,
+        0,
+        128,
+        255
+      ],
+      "effect": "One-pixel target samples only the first source pixel."
+    },
+    {
+      "task": "T04-15",
+      "case": "valid-jpeg-marker-fill",
+      "originalDimensions": {
+        "width": 2,
+        "height": 1
+      },
+      "wasmDecodedDimensions": {
+        "width": 2,
+        "height": 1
+      },
+      "probeDimensions": null,
+      "effect": "The queue rejects a JPEG which the actual codec decodes successfully."
+    },
+    {
+      "task": "T04-16",
+      "case": "recompress-during-zip",
+      "entries": [
+        {
+          "name": "one.jpg",
+          "magic": [
+            255,
+            216,
+            255
+          ]
+        },
+        {
+          "name": "two.png",
+          "magic": [
+            255,
+            216,
+            255
+          ]
+        }
+      ],
+      "effect": "A JPEG original can be archived with a PNG extension after its task result is cleared."
+    }
+  ]
+}

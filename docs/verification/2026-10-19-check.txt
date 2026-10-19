@@ -1,0 +1,100 @@
+[nuxt:tailwindcss] ℹ Using default Tailwind CSS file
+
+ RUN  v5.0.4 /Users/taomingyang/Desktop/project/Tiny-Image
+
+
+ Test Files  12 passed (12)
+      Tests  88 passed (88)
+   Start at  16:54:39
+   Duration  619ms (tests 56%, import 30%, transform 13%, worker 2%)
+
+Generated local notices for 815 package versions.
+[{"name":"copy-paste","version":"2.2.0","license":"NOT DECLARED"},{"name":"node-forge","version":"1.3.3","license":"(BSD-3-Clause OR GPL-2.0)"},{"name":"only","version":"0.0.2","license":"NOT DECLARED"},{"name":"tosource","version":"2.0.0-alpha.3","license":"NOT DECLARED"}]
+┌  Building Nuxt for production...
+│
+●  Nuxt 3.20.2 (with Nitro 2.12.9, Vite 7.3.0 and Vue 3.5.26)
+[nuxt:tailwindcss] ℹ Using default Tailwind CSS file
+│
+●  Nitro preset: cloudflare-module
+
+ WARN  Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+ℹ Building client...
+ℹ vite v7.3.0 building client environment for production...
+ℹ transforming...
+ℹ ✓ 229 modules transformed.
+ℹ rendering chunks...
+ℹ computing gzip size...
+ℹ .nuxt/dist/client/manifest.json                             2.38 kB │ gzip:   0.51 kB
+ℹ .nuxt/dist/client/_nuxt/squoosh_oxipng-yu2r7-gO.js          2.80 kB
+ℹ .nuxt/dist/client/_nuxt/workerHelpers.worker-Hf5p0PFd.js    4.81 kB
+ℹ .nuxt/dist/client/_nuxt/squoosh_oxipng-DlH0ttid.js          5.68 kB
+ℹ .nuxt/dist/client/_nuxt/png-KXd9itNx.js                     7.18 kB
+ℹ .nuxt/dist/client/_nuxt/image.worker-XS3U2Jbd.js            9.80 kB
+ℹ .nuxt/dist/client/_nuxt/webp-Di5GWMis.js                   19.98 kB
+ℹ .nuxt/dist/client/_nuxt/webp_enc_simd-CAFyfE9_.js          20.19 kB
+ℹ .nuxt/dist/client/_nuxt/webp_enc-2l0OY9rs.js               20.23 kB
+ℹ .nuxt/dist/client/_nuxt/jpeg-BwvVFKNe.js                   37.59 kB
+ℹ .nuxt/dist/client/_nuxt/spike.worker-CtyO4R_e.js           59.92 kB
+ℹ .nuxt/dist/client/_nuxt/webp_dec-C990n7mh.wasm            137.96 kB │ gzip:  49.49 kB
+ℹ .nuxt/dist/client/_nuxt/squoosh_oxipng_bg-OFMN1KwG.wasm   164.17 kB │ gzip:  76.15 kB
+ℹ .nuxt/dist/client/_nuxt/mozjpeg_dec-muSO2n8T.wasm         166.47 kB │ gzip:  63.91 kB
+ℹ .nuxt/dist/client/_nuxt/squoosh_png_bg-DAY7U9NW.wasm      181.09 kB │ gzip:  85.40 kB
+ℹ .nuxt/dist/client/_nuxt/squoosh_oxipng_bg-BayMGzvb.wasm   236.04 kB │ gzip: 101.87 kB
+ℹ .nuxt/dist/client/_nuxt/mozjpeg_enc-DO-zoExo.wasm         251.52 kB │ gzip:  59.85 kB
+ℹ .nuxt/dist/client/_nuxt/webp_enc-BpZvKflB.wasm            281.26 kB │ gzip: 114.97 kB
+ℹ .nuxt/dist/client/_nuxt/webp_enc_simd-CFvKQ_80.wasm       345.58 kB │ gzip: 127.98 kB
+ℹ .nuxt/dist/client/_nuxt/index.Yz4YL1Gg.css                  0.14 kB │ gzip:   0.12 kB
+ℹ .nuxt/dist/client/_nuxt/DlAUqK2U.js                         0.09 kB │ gzip:   0.10 kB
+ℹ .nuxt/dist/client/_nuxt/BBjur6QO.js                         2.68 kB │ gzip:   0.86 kB
+ℹ .nuxt/dist/client/_nuxt/BQl-6pP3.js                         3.20 kB │ gzip:   1.33 kB
+ℹ .nuxt/dist/client/_nuxt/Cg20Enwa.js                         3.48 kB │ gzip:   1.82 kB
+ℹ .nuxt/dist/client/_nuxt/Df-na8Va.js                         8.50 kB │ gzip:   3.41 kB
+ℹ .nuxt/dist/client/_nuxt/DckeFmKF.js                         9.37 kB │ gzip:   3.78 kB
+ℹ .nuxt/dist/client/_nuxt/OT1NbW-_.js                         9.38 kB │ gzip:   3.24 kB
+ℹ .nuxt/dist/client/_nuxt/BnF8zfLj.js                        11.07 kB │ gzip:   3.92 kB
+ℹ .nuxt/dist/client/_nuxt/DDZ4Sm3D.js                        66.64 kB │ gzip:  21.57 kB
+ℹ .nuxt/dist/client/_nuxt/C1njXjMy.js                       248.89 kB │ gzip:  91.63 kB
+ℹ ✓ built in 2.10s
+✔ Client built in 2111ms
+ℹ Building server...
+ℹ vite v7.3.0 building ssr environment for production...
+ℹ transforming...
+ℹ ✓ 152 modules transformed.
+ℹ rendering chunks...
+ℹ ✓ built in 866ms
+✔ Server built in 871ms
+[nitro] ℹ Initializing prerenderer
+[nitro] ℹ Prerendering 10 routes
+[nitro]   ├─ /__sitemap__/style.xsl (21ms)
+[nitro]   ├─ /robots.txt (22ms)
+[nitro]   ├─ /404.html (50ms)
+[nitro]   ├─ /200.html (50ms)
+[nitro]   ├─ /privacy/ (96ms)
+[nitro]   ├─ /ja/ (105ms)
+[nitro]   ├─ /en/ (103ms)
+[nitro]   ├─ / (105ms)
+[nitro]   ├─ /en/privacy/ (98ms)
+[nitro]   ├─ /ja/privacy/ (94ms)
+[nitro]   ├─ /privacy/_payload.json (3ms)
+[nitro]   ├─ /ja/_payload.json (3ms)
+[nitro]   ├─ /en/_payload.json (2ms)
+[nitro]   ├─ /_payload.json (2ms)
+[nitro]   ├─ /en/privacy/_payload.json (2ms)
+[nitro]   ├─ /ja/privacy/_payload.json (1ms)
+[nitro]   ├─ /_i18n/OqhakC2q/en/messages.json (6ms)
+[nitro]   ├─ /_i18n/OqhakC2q/ja/messages.json (7ms)
+[nitro]   ├─ /_i18n/OqhakC2q/zh/messages.json (7ms)
+[nitro]   ├─ /sitemap.xml (8ms)
+[nitro] ℹ Prerendered 20 routes in 1.189 seconds
+[nitro] ✔ Generated public .output/public
+[nitro] ℹ Adding Nitro fallback to _headers to handle all unmatched routes.
+ℹ Generated .output/public/_headers
+[nitro] ✔ You can preview this build using npx wrangler dev .output/server/index.mjs --assets .output/public
+[nitro] ✔ You can deploy this build using npx wrangler deploy .output/server/index.mjs --assets .output/public
+│
+└  ✨ You can now deploy .output/public to any static hosting!
+Generated canonical redirects, robots and configured verification/advertising files.
+SEO checks passed: 6 pages, metadata, hreflang, JSON-LD, sitemap, robots and redirects.

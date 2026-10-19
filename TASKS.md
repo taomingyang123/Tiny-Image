@@ -204,10 +204,45 @@
   1. 移除首页、隐私页及 FAQ 模块多余的内层窄宽度约束（`max-w-5xl` / `max-w-4xl` / `max-w-3xl` 与额外水平内边距），使页面主体内容宽度与顶部导航栏（`SiteHeader`）及页脚（`SiteFooter`）在 `.site-container` 内完全对齐；
   2. 清理 `assets/css/main.css` 中覆盖 Tailwind `gap-*` 的全局 `.grid` 冲突样式；
   3. 重构 `components/ImageSettings.vue` 三列配置布局，统一各列标题行与控件区高度（`h-11`）及水平基线对齐，将模式说明置于底部统一提示栏，消除中间列下沉错位与按钮间距异常。
-- **验证**：静态：源码、DOM 选择器（`data-testid="settings"`、`data-output`）与多语言词条引用核对无误；运行时与系统级：当前沙箱仅开放项目目录，无法读取 `/Users/taomingyang/.nvm` 下的 Node 可执行文件（`Operation not permitted`），待在本地终端执行 `yarn check` 与 `yarn test:e2e` 验证。
+- **验证**：2026-10-19 静态：typecheck 与词条检查通过；运行时：88 项测试、SSG、SEO 通过；系统级：本地 Chrome 20 项既有流程通过，补充多语言窄屏及输入检查发现问题，尚未通过本任务全部验收。早期 Node 读取权限问题已消失。
 - **状态**：doing
-- **进展**：2026-10-14 完成 `pages/index.vue`、`pages/privacy.vue`、`components/ImageFaq.vue`、`components/ImageSettings.vue` 与 `assets/css/main.css` 改造及静态核对；按三层完成定义保持 `doing` 等待本地 Node 运行时验证。
-- **证据**：Git diff 核对通过（`pages/index.vue`、`pages/privacy.vue`、`components/ImageFaq.vue`、`components/ImageSettings.vue`、`assets/css/main.css`）。
+- **进展**：2026-10-14 完成 `pages/index.vue`、`pages/privacy.vue`、`components/ImageFaq.vue`、`components/ImageSettings.vue` 与 `assets/css/main.css` 改造及静态核对。2026-10-19 环境已可运行 Node 22.17.0 / Yarn 4.5.0，`yarn check`（88 项测试、SSG 与 SEO）通过，真实 Chrome 20 项既有流程通过，但新增场景复现英文 390px 配置区溢出，以及自定义尺寸输入 1920 时输入框消失失焦；桌面 1440px 导航与面板左右边界一致。保持 `doing`，当前待处理为真实 UI 问题，不再将 Node 权限作为当前阻碍。
+- **证据**：原改造 Git diff 核对；2026-10-19 `yarn check` 通过；[布局与输入诊断](docs/verification/2026-10-19-layout.json)、[当前待办复核](docs/verification/2026-10-19-pending-review.md)。
+
+#### T04-14 · 修复透明图片缩放边缘与单像素采样
+- **行为**：以预乘 Alpha 方式重采样透明图片，修正缩到 1px 时只取左上/首像素的问题，补像素级与真实编解码回归。
+- **验证**：红色不透明到透明黑的过渡，缩放后半透明像素保持红色，避免合成白底时产生暗边；2x1 红蓝缩到 1x1 不应仅输出左端红色。
+- **状态**：todo
+- **进展**：2026-10-19 已用当前函数复现，未修改算法实现。
+- **证据**：[当前问题复现](docs/verification/2026-10-19-confirmed-bugs.json)。
+
+#### T04-15 · 修复带 marker 填充字节的 JPEG 尺寸识别
+- **行为**：使 JPEG 尺寸扫描正确跳过重复 FF 填充及无长度标记，避免正常 JPEG 被预检判为 INVALID_FILE。
+- **验证**：真实编码 JPEG 加入 FF marker 填充后，WASM 仍可解码，尺寸预检也须返回一致宽高；覆盖损坏段边界。
+- **状态**：todo
+- **进展**：2026-10-19 用真实 MozJPEG 生成 2x1 文件复现：解码成功，probeDimensions 返回 null，队列会拒绝。
+- **证据**：[当前问题复现](docs/verification/2026-10-19-confirmed-bugs.json)。
+
+#### T04-16 · 修复 ZIP 打包与重新压缩的并发结果混用
+- **行为**：打包开始时快照 Blob、扩展名与大小，或限制冲突操作，保证异步读取期间任务变更不会混用原图和压缩结果。
+- **验证**：第一张异步读取期间重置第二张结果后，ZIP 仍保持开始打包时的成功结果与正确 MIME/扩展名；覆盖总大小限制。
+- **状态**：todo
+- **进展**：2026-10-19 受控异步复现 two.png 内为 JPEG 字节；已确认 UI 在打包时仍可重新压缩，未修改功能代码。
+- **证据**：[当前问题复现](docs/verification/2026-10-19-confirmed-bugs.json)。
+
+#### T04-17 · 补充多语言窄屏、尺寸输入与测试证据隔离
+- **行为**：扩充浏览器检查到三语及多个窄屏宽度、控件内部溢出、自定义输入焦点、ZIP 并发与缩放像素；修正移动视口溢出断言，测试证据按实际日期/运行 ID 保存。
+- **验证**：当前已知问题在修复前能使对应回归失败；移动 overflow 不只比较可能同时扩张的 innerWidth 与 scrollWidth；不覆盖 2026-10-14 历史证据。
+- **状态**：todo
+- **进展**：2026-10-19 既有 88 项测试和 20 项浏览器流程均通过，但新增诊断可复现问题；现有脚本输出路径硬编码为 2026-10-14，本次用临时脚本隔离证据。
+- **证据**：[当前待办复核](docs/verification/2026-10-19-pending-review.md)。
+
+#### T04-18 · 同步项目现状与运行契约文档
+- **行为**：更新 AGENTS 当前阶段及运行契约，明确 E2E 为本地 Chrome/CDP；区分 init.md 模板导入记录与当前产品状态，保留历史但避免把旧记录当成现状。
+- **验证**：当前状态与 TASKS、实际命令、最近验证证据一致；外部生产、真机和版权未验收项目继续保留。
+- **状态**：todo
+- **进展**：2026-10-19 发现 AGENTS 仍写阶段 0/命令待验证/Playwright 配置，与当前实现和已完成本地验证不一致。
+- **证据**：[当前待办复核](docs/verification/2026-10-19-pending-review.md)。
 
 ### 已归档任务（历史模板）
 
@@ -217,10 +252,10 @@
 
 ## 完成进度
 
-- todo：2（T04-11、T04-12）
+- todo：7（T04-11、T04-12、T04-14～T04-18）
 - doing：1（T04-13）
 - blocked：0
 - done：23（既有 22 项含 F01 归档 + T04-10 本地审查）
-- 总数：26
+- 总数：31
 - 已启动或受阻数 = doing + blocked + done：24
 - 收尾比例 = done / (doing + blocked + done)：95.8%（23 / 24；不含 todo，不代表生产验收通过）
